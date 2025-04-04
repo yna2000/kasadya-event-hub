@@ -1,6 +1,6 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { useNotifications } from './NotificationContext';
 
 export type UserType = {
   id: string;
@@ -36,7 +36,6 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserType>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { addNotification } = useNotifications();
 
   // Check if user is already logged in
   useEffect(() => {
@@ -46,6 +45,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoading(false);
   }, []);
+
+  const createNotification = (userId: string, title: string, message: string, type: 'booking' | 'payment' | 'system') => {
+    // Get existing notifications from localStorage
+    const storedNotifications = localStorage.getItem('notifications');
+    let notifications = [];
+    
+    if (storedNotifications) {
+      notifications = JSON.parse(storedNotifications);
+    }
+    
+    // Create new notification
+    const newNotification = {
+      id: `notif-${Math.random().toString(36).substring(2, 9)}`,
+      userId,
+      title,
+      message,
+      type,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    
+    // Add to notifications array
+    notifications = [newNotification, ...notifications];
+    
+    // Save back to localStorage
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+    
+    // Show toast
+    toast({
+      title: title,
+      description: message,
+    });
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -70,12 +102,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
           
           // Create a welcome back notification
-          addNotification({
-            userId: userWithoutPassword.id,
-            title: "Welcome back!",
-            message: `You've successfully logged in to Kasadya Marketplace.`,
-            type: 'system'
-          });
+          createNotification(
+            userWithoutPassword.id,
+            "Welcome back!",
+            `You've successfully logged in to Kasadya Marketplace.`,
+            'system'
+          );
           
           toast({
             title: "Login successful",
@@ -155,12 +187,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('user', JSON.stringify(userWithoutPassword));
       
       // Create a welcome notification
-      addNotification({
-        userId: userWithoutPassword.id,
-        title: "Welcome to Kasadya Marketplace!",
-        message: `Thank you for registering, ${name}! Start exploring our services and vendors.`,
-        type: 'system'
-      });
+      createNotification(
+        userWithoutPassword.id,
+        "Welcome to Kasadya Marketplace!",
+        `Thank you for registering, ${name}! Start exploring our services and vendors.`,
+        'system'
+      );
       
       toast({
         title: "Registration successful",

@@ -36,16 +36,7 @@ export const useNotifications = () => {
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  
-  // Use try-catch to handle the case when AuthProvider isn't available yet
-  let user = null;
-  try {
-    const auth = useAuth();
-    user = auth.user;
-  } catch (error) {
-    // Auth context not available, that's ok
-    console.log('Auth context not available in NotificationProvider');
-  }
+  const { user } = useAuth();
 
   // Load notifications from local storage on startup
   useEffect(() => {
