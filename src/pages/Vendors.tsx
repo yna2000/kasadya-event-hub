@@ -13,17 +13,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Layout from '@/components/layout/Layout';
+import VendorBookingForm from '@/components/booking/VendorBookingForm';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Vendors = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<any>(null);
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+  const { user } = useAuth();
   
   // Mock data for vendors - would come from an API in a real application
   const vendors = [
     {
-      id: 1,
+      id: "vendor1",
       name: "Elegance Wedding Photography",
       description: "Award-winning photographers specializing in wedding and event photography",
       category: "Photography",
@@ -34,7 +39,7 @@ const Vendors = () => {
       featured: true,
     },
     {
-      id: 2,
+      id: "vendor2",
       name: "Divine Catering Services",
       description: "Exceptional food and service for all types of events and occasions",
       category: "Catering",
@@ -45,7 +50,7 @@ const Vendors = () => {
       featured: true,
     },
     {
-      id: 3,
+      id: "vendor3",
       name: "Rhythms Entertainment",
       description: "Live music, DJs, and performers for weddings, corporate events, and parties",
       category: "Entertainment",
@@ -56,7 +61,7 @@ const Vendors = () => {
       featured: false,
     },
     {
-      id: 4,
+      id: "vendor4",
       name: "Blooms & Blossoms",
       description: "Creative floral arrangements and decorations for events of all sizes",
       category: "Decoration",
@@ -67,7 +72,7 @@ const Vendors = () => {
       featured: false,
     },
     {
-      id: 5,
+      id: "vendor5",
       name: "Celebration Venue",
       description: "Elegant venue spaces for weddings, corporate events, and special occasions",
       category: "Venue",
@@ -78,7 +83,7 @@ const Vendors = () => {
       featured: true,
     },
     {
-      id: 6,
+      id: "vendor6",
       name: "Sweet Delights Bakery",
       description: "Custom cakes and desserts for birthdays, weddings, and special events",
       category: "Bakery",
@@ -103,6 +108,11 @@ const Vendors = () => {
     
     return matchesSearch && matchesLocation && matchesCategory;
   });
+
+  const handleContactVendor = (vendor: any) => {
+    setSelectedVendor(vendor);
+    setIsBookingFormOpen(true);
+  };
 
   return (
     <Layout>
@@ -217,8 +227,11 @@ const Vendors = () => {
                       </div>
                     </div>
                     
-                    <Button className="w-full mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple">
-                      Contact Vendor
+                    <Button 
+                      className="w-full mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                      onClick={() => handleContactVendor(vendor)}
+                    >
+                      Book Now
                     </Button>
                   </CardContent>
                 </Card>
@@ -263,8 +276,11 @@ const Vendors = () => {
                       </div>
                     </div>
                     
-                    <Button className="w-full mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple">
-                      Contact Vendor
+                    <Button 
+                      className="w-full mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                      onClick={() => handleContactVendor(vendor)}
+                    >
+                      Book Now
                     </Button>
                   </CardContent>
                 </Card>
@@ -296,11 +312,25 @@ const Vendors = () => {
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Expand your business by becoming a vendor on Kasadya Marketplace. Reach more clients and grow your event service business.
           </p>
-          <Button size="lg" variant="outline" className="bg-white text-kasadya-purple hover:bg-gray-100">
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="bg-white text-kasadya-purple hover:bg-gray-100"
+            onClick={() => window.location.href = '/register'}
+          >
             Become a Vendor
           </Button>
         </div>
       </section>
+
+      {/* Booking Form Dialog */}
+      {selectedVendor && (
+        <VendorBookingForm 
+          isOpen={isBookingFormOpen}
+          onClose={() => setIsBookingFormOpen(false)}
+          vendor={selectedVendor}
+        />
+      )}
     </Layout>
   );
 };
