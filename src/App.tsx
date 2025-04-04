@@ -25,8 +25,8 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <NotificationProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <NotificationProvider>
           <BookingProvider>
             <TooltipProvider>
               <Toaster />
@@ -48,8 +48,8 @@ const App = () => {
               </BrowserRouter>
             </TooltipProvider>
           </BookingProvider>
-        </AuthProvider>
-      </NotificationProvider>
+        </NotificationProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };

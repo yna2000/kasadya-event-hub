@@ -18,7 +18,16 @@ import {
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
-  const { unreadCount } = useNotifications();
+  
+  // Safely handle notifications
+  let unreadCount = 0;
+  try {
+    const { unreadCount: count } = useNotifications();
+    unreadCount = count;
+  } catch (error) {
+    console.log('Notifications context not available in Navbar');
+  }
+  
   const navigate = useNavigate();
 
   const toggleMenu = () => {
