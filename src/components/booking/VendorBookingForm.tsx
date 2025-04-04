@@ -82,16 +82,18 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
     // In a real app, the amount would be calculated based on the service
     const amount = Math.floor(Math.random() * 500) + 100;
 
-    // Create the booking
+    // Create the booking with properties that match the Booking interface
     const success = await createBooking({
       vendorId: vendor.id,
       vendorName: vendor.name,
-      userId: user.id, // Changed from customerId to userId to match the Booking type
-      customerName: user.name,
-      service: service,
+      userId: user.id,
+      serviceId: vendor.id, // Using vendor.id as a fallback
+      serviceName: service,
+      serviceDescription: `${service} provided by ${vendor.name}`,
       date: data.date.toISOString(),
       time: data.time,
       amount: amount,
+      notes: data.notes || '',
     });
 
     if (success) {

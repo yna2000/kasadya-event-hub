@@ -36,7 +36,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { bookings, cancelBooking, processPayment } = useBooking();
-  const { notifications, clearNotification, markAsRead } = useNotifications();
+  const { notifications, markAsRead, deleteNotification } = useNotifications();
   
   const [activeTab, setActiveTab] = useState('bookings');
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -283,7 +283,7 @@ const Dashboard = () => {
                                   Mark as Read
                                 </Button>
                               )}
-                              <Button variant="ghost" size="sm" onClick={() => clearNotification(notification.id)}>
+                              <Button variant="ghost" size="sm" onClick={() => deleteNotification(notification.id)}>
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>

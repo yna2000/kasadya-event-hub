@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useNotifications } from './NotificationContext';
@@ -9,6 +8,8 @@ export type UserType = {
   email: string;
   role: 'customer' | 'vendor' | 'admin';
   profileImage?: string;
+  phone?: string;
+  address?: string;
   dateJoined: string;
 } | null;
 
@@ -46,7 +47,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  // Mock login function - In a real app, this would call an API
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -107,7 +107,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Mock register function with better user management
   const register = async (name: string, email: string, password: string, role: 'customer' | 'vendor') => {
     setIsLoading(true);
     try {
@@ -140,6 +139,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email,
         password, // In a real app, you would hash this password
         role,
+        phone: '',
+        address: '',
         dateJoined: new Date().toISOString(),
       };
       
