@@ -1,6 +1,7 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 export interface Notification {
   id: string;
@@ -20,6 +21,7 @@ interface NotificationContextType {
   markAllAsRead: () => void;
   getUserNotifications: (userId: string) => Notification[];
   deleteNotification: (notificationId: string) => void;
+  recentNotifications: Notification[];
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -51,7 +53,29 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [notifications]);
 
+  // Show toast for new unread notifications for the current user
+  useEffect(() => {
+    if (user && notifications.length > 0) {
+      const latestNotification = notifications[0]; // Assuming notifications are sorted by createdAt desc
+      
+      if (latestNotification.userId === user.id && !latestNotification.read) {
+        // Only show toast for the most recent notification
+        toast({
+          title: latestNotification.title,
+          description: latestNotification.message,
+        });
+      }
+    }
+  }, [notifications, user]);
+
   const unreadCount = notifications.filter(n => !n.read && (user?.id === n.userId)).length;
+
+  const recentNotifications = user 
+    ? notifications
+        .filter(n => n.userId === user.id)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+    : [];
 
   const addNotification = (notificationData: Omit<Notification, 'id' | 'read' | 'createdAt'>) => {
     const newNotification: Notification = {
@@ -99,7 +123,8 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       markAsRead,
       markAllAsRead,
       getUserNotifications,
-      deleteNotification
+      deleteNotification,
+      recentNotifications
     }}>
       {children}
     </NotificationContext.Provider>

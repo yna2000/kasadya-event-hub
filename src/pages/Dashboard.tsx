@@ -1,267 +1,419 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Bell, Calendar, CreditCard, FileText, User } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBookings } from '@/contexts/BookingContext';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDistanceToNow } from 'date-fns';
+import { Bell, Calendar, CreditCard, Settings, User } from 'lucide-react';
 
 const Dashboard = () => {
+  const { user, isAuthenticated } = useAuth();
+  const { getUserNotifications, markAsRead, markAllAsRead } = useNotifications();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { bookings, processPayment } = useBookings();
-  const { notifications, markAsRead, getUserNotifications } = useNotifications();
-  const [activeTab, setActiveTab] = useState("bookings");
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // Redirect if not logged in
+  // Redirect if not authenticated
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+
   if (!user) {
-    navigate('/login');
-    return null;
+    return null; // Don't render anything while redirecting
   }
 
-  const userBookings = bookings.filter(booking => 
-    user.role === 'customer' 
-      ? booking.customerId === user.id 
-      : booking.vendorId === user.id
-  );
-  
   const userNotifications = getUserNotifications(user.id);
+  
+  // This would fetch from a real API in a production app
+  const userBookings = [
+    {
+      id: 'booking-1',
+      vendorName: 'Sunshine Catering',
+      service: 'Full Catering Package',
+      date: '2025-05-15',
+      status: 'confirmed',
+      price: 25000,
+    },
+    {
+      id: 'booking-2',
+      vendorName: 'Dream Photography',
+      service: 'Wedding Photography Package',
+      date: '2025-06-20',
+      status: 'pending',
+      price: 15000,
+    }
+  ];
 
-  const handlePayNow = async (bookingId: string) => {
-    await processPayment(bookingId, 'credit_card');
-  };
+  // This would fetch from a real API in a production app
+  const paymentHistory = [
+    {
+      id: 'payment-1',
+      date: '2025-04-01',
+      amount: 5000,
+      description: 'Deposit for Sunshine Catering',
+      status: 'completed',
+    },
+    {
+      id: 'payment-2',
+      date: '2025-03-15',
+      amount: 7500,
+      description: 'Deposit for Dream Photography',
+      status: 'completed',
+    }
+  ];
 
-  const handleNotificationClick = (notificationId: string) => {
-    markAsRead(notificationId);
-    // In a real app, you might navigate to the relevant section
-    setActiveTab("bookings");
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
   };
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Hello, {user.name}</h1>
-            <p className="text-gray-600">
-              {user.role === 'customer' 
-                ? 'Manage your event bookings and payments' 
-                : 'Manage your service bookings and business'}
-            </p>
+      <div className="container mx-auto py-10 px-4">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Sidebar */}
+          <div className="md:w-1/4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">
+                  Welcome, {user.name}
+                </CardTitle>
+                <CardDescription>Manage your account and bookings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <nav className="space-y-2">
+                  <Button 
+                    variant={activeTab === 'overview' ? 'default' : 'ghost'} 
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('overview')}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Overview
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'bookings' ? 'default' : 'ghost'}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('bookings')}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Bookings
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'payments' ? 'default' : 'ghost'}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('payments')}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Payments
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'notifications' ? 'default' : 'ghost'}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('notifications')}
+                  >
+                    <Bell className="mr-2 h-4 w-4" />
+                    Notifications
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'settings' ? 'default' : 'ghost'}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('settings')}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Button>
+                </nav>
+              </CardContent>
+            </Card>
           </div>
-          <div className="mt-4 md:mt-0">
-            <Button 
-              onClick={() => logout()}
-              variant="outline"
-              className="mr-2"
-            >
-              Log Out
-            </Button>
-            {user.role === 'vendor' && (
-              <Button className="bg-kasadya-purple hover:bg-kasadya-deep-purple">
-                Add New Service
-              </Button>
-            )}
-          </div>
-        </div>
 
-        <Tabs defaultValue="bookings" onValueChange={setActiveTab} value={activeTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="bookings" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" /> Bookings
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" /> Notifications
-              {userNotifications.filter(n => !n.read).length > 0 && (
-                <Badge className="h-5 w-5 flex items-center justify-center p-0 rounded-full bg-red-500">
-                  {userNotifications.filter(n => !n.read).length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" /> Profile
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="bookings">
-            <div className="grid grid-cols-1 gap-6">
+          {/* Main Content */}
+          <div className="md:w-3/4">
+            {activeTab === 'overview' && (
               <Card>
                 <CardHeader>
-                  <CardTitle>
-                    {user.role === 'customer' ? 'Your Bookings' : 'Booking Requests'}
-                  </CardTitle>
+                  <CardTitle>Dashboard Overview</CardTitle>
+                  <CardDescription>Your account summary at a glance</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {userBookings.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-600">No bookings yet</h3>
-                      {user.role === 'customer' && (
-                        <p className="mt-2 text-gray-500">
-                          Start browsing our vendors and book your first event service.
-                        </p>
-                      )}
-                      {user.role === 'vendor' && (
-                        <p className="mt-2 text-gray-500">
-                          No booking requests yet. Make sure your services are visible to customers.
-                        </p>
-                      )}
-                      <Button 
-                        className="mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple"
-                        onClick={() => navigate('/vendors')}
-                      >
-                        {user.role === 'customer' ? 'Browse Vendors' : 'Manage Services'}
-                      </Button>
-                    </div>
-                  ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{userBookings.length}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{userBookings.filter(b => new Date(b.date) > new Date()).length}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Unread Notifications</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{userNotifications.filter(n => !n.read).length}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+                  <div className="space-y-4">
+                    {userNotifications.slice(0, 3).map(notification => (
+                      <div key={notification.id} className="flex items-start p-3 rounded-lg bg-gray-50">
+                        <Bell className="h-5 w-5 text-kasadya-purple mr-2 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium">{notification.title}</h4>
+                          <p className="text-sm text-gray-600">{notification.message}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {userNotifications.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No recent activity</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === 'bookings' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Bookings</CardTitle>
+                  <CardDescription>Manage your event services bookings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {userBookings.length > 0 ? (
                     <div className="space-y-4">
-                      {userBookings.map((booking) => (
-                        <div 
-                          key={booking.id}
-                          className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex flex-col md:flex-row justify-between">
-                            <div>
-                              <h3 className="font-medium text-lg">
-                                {user.role === 'customer' ? booking.vendorName : booking.customerName}
-                              </h3>
-                              <p className="text-gray-600">{booking.service}</p>
-                              <div className="flex items-center gap-4 mt-2 text-sm">
-                                <span>Date: {new Date(booking.date).toLocaleDateString()}</span>
-                                <span>Time: {booking.time}</span>
+                      {userBookings.map(booking => (
+                        <Card key={booking.id}>
+                          <CardContent className="p-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                              <div>
+                                <h3 className="font-semibold">{booking.vendorName}</h3>
+                                <p className="text-sm text-gray-600">{booking.service}</p>
+                                <p className="text-sm">Date: {new Date(booking.date).toLocaleDateString()}</p>
+                              </div>
+                              <div className="mt-2 md:mt-0 space-y-2">
+                                <div className={`inline-block px-2 py-1 rounded-full text-xs ${
+                                  booking.status === 'confirmed' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                </div>
+                                <p className="font-medium text-right">₱{booking.price.toLocaleString()}</p>
+                                <Button variant="outline" size="sm" className="w-full md:w-auto">
+                                  View Details
+                                </Button>
                               </div>
                             </div>
-                            <div className="mt-4 md:mt-0 flex flex-col items-end">
-                              <Badge className={`mb-2 ${
-                                booking.status === 'pending' ? 'bg-yellow-500' :
-                                booking.status === 'confirmed' ? 'bg-blue-500' :
-                                booking.status === 'paid' ? 'bg-green-500' :
-                                booking.status === 'completed' ? 'bg-kasadya-purple' :
-                                'bg-red-500'
-                              }`}>
-                                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                              </Badge>
-                              <p className="font-semibold">${booking.amount.toFixed(2)}</p>
-                              
-                              {user.role === 'customer' && booking.status === 'confirmed' && (
-                                <Button 
-                                  size="sm" 
-                                  className="mt-2 bg-kasadya-gold text-black hover:bg-yellow-500"
-                                  onClick={() => handlePayNow(booking.id)}
-                                >
-                                  <CreditCard className="h-4 w-4 mr-1" /> Pay Now
-                                </Button>
-                              )}
-                              
-                              {user.role === 'vendor' && booking.status === 'pending' && (
-                                <div className="flex gap-2 mt-2">
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="text-red-500 border-red-500 hover:bg-red-50"
-                                  >
-                                    Decline
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
-                                  >
-                                    Accept
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                          </CardContent>
+                        </Card>
                       ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10">
+                      <Calendar className="h-12 w-12 mx-auto text-gray-400" />
+                      <h3 className="mt-4 text-lg font-medium">No bookings yet</h3>
+                      <p className="mt-1 text-gray-500">You haven't made any bookings with vendors yet.</p>
+                      <Button className="mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple">
+                        Browse Vendors
+                      </Button>
                     </div>
                   )}
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
+            )}
 
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notifications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {userNotifications.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Bell className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-600">No notifications</h3>
-                    <p className="mt-2 text-gray-500">
-                      You'll see updates about your bookings and payments here.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {userNotifications.map(notification => (
-                      <div
-                        key={notification.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${notification.read ? 'bg-white' : 'bg-blue-50'}`}
-                        onClick={() => handleNotificationClick(notification.id)}
-                      >
-                        <div className="flex justify-between items-start">
+            {activeTab === 'payments' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment History</CardTitle>
+                  <CardDescription>Track your payments to vendors</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {paymentHistory.length > 0 ? (
+                    <div className="space-y-4">
+                      {paymentHistory.map(payment => (
+                        <div key={payment.id} className="flex items-center justify-between border-b pb-4">
                           <div>
-                            <h4 className={`font-medium ${notification.read ? '' : 'font-semibold'}`}>
-                              {notification.title}
-                            </h4>
-                            <p className="text-gray-600 text-sm mt-1">{notification.message}</p>
-                            <p className="text-xs text-gray-400 mt-2">
-                              {new Date(notification.createdAt).toLocaleString()}
+                            <p className="font-medium">{payment.description}</p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(payment.date).toLocaleDateString()}
                             </p>
                           </div>
-                          <Badge className={
-                            notification.type === 'booking' ? 'bg-blue-500' :
-                            notification.type === 'payment' ? 'bg-green-500' : 'bg-gray-500'
-                          }>
-                            {notification.type}
-                          </Badge>
+                          <div className="text-right">
+                            <p className="font-medium">₱{payment.amount.toLocaleString()}</p>
+                            <span className="inline-block px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                              {payment.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10">
+                      <CreditCard className="h-12 w-12 mx-auto text-gray-400" />
+                      <h3 className="mt-4 text-lg font-medium">No payment history</h3>
+                      <p className="mt-1 text-gray-500">You haven't made any payments yet.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
+            {activeTab === 'notifications' && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Notifications</CardTitle>
+                    <CardDescription>Stay updated with important information</CardDescription>
+                  </div>
+                  {userNotifications.some(n => !n.read) && (
+                    <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
+                      Mark all as read
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {userNotifications.length > 0 ? (
+                    <div className="space-y-4">
+                      {userNotifications.map(notification => (
+                        <div 
+                          key={notification.id} 
+                          className={`p-4 rounded-lg ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-l-4 border-kasadya-purple'}`}
+                          onClick={() => markAsRead(notification.id)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-medium">{notification.title}</h3>
+                            <span className="text-xs text-gray-500">
+                              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-gray-600">{notification.message}</p>
+                          <div className="mt-2 flex justify-between">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${
+                              notification.type === 'booking' 
+                                ? 'bg-green-100 text-green-800' 
+                                : notification.type === 'payment'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {notification.type}
+                            </span>
+                            {!notification.read && (
+                              <span className="text-xs text-kasadya-purple">New</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10">
+                      <Bell className="h-12 w-12 mx-auto text-gray-400" />
+                      <h3 className="mt-4 text-lg font-medium">No notifications</h3>
+                      <p className="mt-1 text-gray-500">You're all caught up!</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === 'settings' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Settings</CardTitle>
+                  <CardDescription>Manage your profile and preferences</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-2">Personal Information</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Full Name</label>
+                          <Input defaultValue={user.name} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Email</label>
+                          <Input defaultValue={user.email} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Account Type</label>
+                          <Input defaultValue={user.role.charAt(0).toUpperCase() + user.role.slice(1)} disabled />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Member Since</label>
+                          <Input defaultValue={user.dateJoined ? new Date(user.dateJoined).toLocaleDateString() : 'N/A'} disabled />
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      <Button className="mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple">
+                        Save Changes
+                      </Button>
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                      <h3 className="text-lg font-medium mb-2">Password</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Current Password</label>
+                          <Input type="password" />
+                        </div>
+                        <div></div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">New Password</label>
+                          <Input type="password" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Confirm New Password</label>
+                          <Input type="password" />
+                        </div>
+                      </div>
+                      <Button className="mt-4" variant="outline">
+                        Change Password
+                      </Button>
+                    </div>
 
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Profile</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Full Name</h3>
-                  <p className="mt-1">{user.name}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Email</h3>
-                  <p className="mt-1">{user.email}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Account Type</h3>
-                  <p className="mt-1 capitalize">{user.role}</p>
-                </div>
-                
-                <div className="pt-4">
-                  <Button className="mr-4 bg-kasadya-purple hover:bg-kasadya-deep-purple">
-                    Update Profile
-                  </Button>
-                  <Button variant="outline">Change Password</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                    <div className="pt-4 border-t">
+                      <h3 className="text-lg font-medium mb-2">Notification Preferences</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm">Email notifications</label>
+                          <input type="checkbox" className="toggle toggle-primary" defaultChecked />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm">SMS notifications</label>
+                          <input type="checkbox" className="toggle toggle-primary" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm">Marketing emails</label>
+                          <input type="checkbox" className="toggle toggle-primary" />
+                        </div>
+                      </div>
+                      <Button className="mt-4" variant="outline">
+                        Save Preferences
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
     </Layout>
   );
