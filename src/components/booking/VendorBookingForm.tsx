@@ -28,7 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBookings } from '@/contexts/BookingContext';
+import { useBooking } from '@/contexts/BookingContext'; // Fixed: changed from useBookings to useBooking
 import { useNotifications } from '@/contexts/NotificationContext';
 
 const bookingSchema = z.object({
@@ -58,7 +58,7 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { createBooking } = useBookings();
+  const { createBooking } = useBooking(); // Fixed: changed from useBookings to useBooking
   const { addNotification } = useNotifications();
 
   const form = useForm<BookingFormData>({

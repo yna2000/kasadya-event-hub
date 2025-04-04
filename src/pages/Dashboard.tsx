@@ -1,420 +1,504 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input'; // Added Input import that was missing
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBooking } from '@/contexts/BookingContext';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatDistanceToNow } from 'date-fns';
-import { Bell, Calendar, CreditCard, Settings, User } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Bell,
+  Calendar,
+  CreditCard,
+  DollarSign,
+  Settings,
+  User,
+  X,
+  Check,
+  AlertTriangle,
+  Heart,
+  Bookmark,
+  Clock
+} from 'lucide-react';
 
 const Dashboard = () => {
-  const { user, isAuthenticated } = useAuth();
-  const { getUserNotifications, markAsRead, markAllAsRead } = useNotifications();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-
-  // Redirect if not authenticated
-  React.useEffect(() => {
-    if (!isAuthenticated) {
+  const { user, logout } = useAuth();
+  const { bookings, cancelBooking, processPayment } = useBooking();
+  const { notifications, clearNotification, markAsRead } = useNotifications();
+  
+  const [activeTab, setActiveTab] = useState('bookings');
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  
+  const [editProfile, setEditProfile] = useState(false);
+  const [userProfile, setUserProfile] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || ''
+  });
+  
+  const [newPassword, setNewPassword] = useState({
+    current: '',
+    password: '',
+    confirm: ''
+  });
+  
+  const [passwordError, setPasswordError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState(false);
+  
+  useEffect(() => {
+    if (!user) {
       navigate('/login');
     }
-  }, [isAuthenticated, navigate]);
+  }, [user, navigate]);
 
-  if (!user) {
-    return null; // Don't render anything while redirecting
-  }
-
-  const userNotifications = getUserNotifications(user.id);
-  
-  // This would fetch from a real API in a production app
-  const userBookings = [
-    {
-      id: 'booking-1',
-      vendorName: 'Sunshine Catering',
-      service: 'Full Catering Package',
-      date: '2025-05-15',
-      status: 'confirmed',
-      price: 25000,
-    },
-    {
-      id: 'booking-2',
-      vendorName: 'Dream Photography',
-      service: 'Wedding Photography Package',
-      date: '2025-06-20',
-      status: 'pending',
-      price: 15000,
-    }
-  ];
-
-  // This would fetch from a real API in a production app
-  const paymentHistory = [
-    {
-      id: 'payment-1',
-      date: '2025-04-01',
-      amount: 5000,
-      description: 'Deposit for Sunshine Catering',
-      status: 'completed',
-    },
-    {
-      id: 'payment-2',
-      date: '2025-03-15',
-      amount: 7500,
-      description: 'Deposit for Dream Photography',
-      status: 'completed',
-    }
-  ];
-
-  const handleMarkAllAsRead = () => {
-    markAllAsRead();
+  const handleCancelBooking = (bookingId: string) => {
+    cancelBooking(bookingId);
+    setSelectedBooking(null);
   };
 
+  const handlePayment = async (bookingId: string) => {
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+
+    const success = await processPayment(bookingId, amount);
+    if (success) {
+      setShowPaymentForm(false);
+      setPaymentAmount('');
+      setSelectedBooking(null);
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
+  const handleProfileUpdate = () => {
+    // Simulate profile update
+    console.log('Profile updated:', userProfile);
+    setEditProfile(false);
+    setProfileSuccess(true);
+    setTimeout(() => setProfileSuccess(false), 3000);
+  };
+
+  const handleChangePassword = () => {
+    if (newPassword.password !== newPassword.confirm) {
+      setPasswordError('Passwords do not match.');
+      return;
+    }
+
+    // Simulate password change
+    console.log('Password changed:', newPassword);
+    setPasswordError('');
+    setNewPassword({ current: '', password: '', confirm: '' });
+  };
+
+  const handleDeleteAccount = () => {
+    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      // Simulate account deletion
+      console.log('Account deleted');
+      logout();
+      navigate('/');
+    }
+  };
+
+  // Render the dashboard UI
   return (
     <Layout>
-      <div className="container mx-auto py-10 px-4">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar */}
-          <div className="md:w-1/4">
+      {/* Dashboard Header */}
+      <section className="bg-gray-100 py-6 border-b">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold">
+                Welcome, {user?.name}!
+              </h1>
+              <p className="text-gray-600">
+                Manage your bookings, profile, and notifications
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => navigate('/vendors')}>
+              Book a Vendor
+            </Button>
+          </div>
+        </div>
+      </section>
+      
+      <div className="container mx-auto py-8 px-4">
+        <Tabs defaultValue={activeTab} onValueChange={handleTabChange}>
+          <TabsList className="w-full max-w-3xl mx-auto mb-8">
+            <TabsTrigger value="bookings" className="data-[state=active]:bg-kasadya-purple data-[state=active]:text-white">
+              <Calendar className="mr-2 h-4 w-4" />
+              My Bookings
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="relative data-[state=active]:bg-kasadya-purple data-[state=active]:text-white">
+              <Bell className="mr-2 h-4 w-4" />
+              Notifications
+              {notifications.filter(n => !n.read).length > 0 && (
+                <Badge className="ml-2 bg-red-500 text-white rounded-full px-2 py-0.5 text-xs absolute -top-1 -right-1">
+                  {notifications.filter(n => !n.read).length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="data-[state=active]:bg-kasadya-purple data-[state=active]:text-white">
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="bookings" className="max-w-3xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl">
-                  Welcome, {user.name}
-                </CardTitle>
-                <CardDescription>Manage your account and bookings</CardDescription>
+                <CardTitle className="text-2xl font-bold">My Bookings</CardTitle>
+                <p className="text-muted-foreground">
+                  View and manage your upcoming and past bookings
+                </p>
               </CardHeader>
               <CardContent>
-                <nav className="space-y-2">
-                  <Button 
-                    variant={activeTab === 'overview' ? 'default' : 'ghost'} 
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('overview')}
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    Overview
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'bookings' ? 'default' : 'ghost'}
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('bookings')}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Bookings
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'payments' ? 'default' : 'ghost'}
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('payments')}
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Payments
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'notifications' ? 'default' : 'ghost'}
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('notifications')}
-                  >
-                    <Bell className="mr-2 h-4 w-4" />
-                    Notifications
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'settings' ? 'default' : 'ghost'}
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('settings')}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Button>
-                </nav>
+                {bookings.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-gray-600">No bookings yet.</p>
+                    <Button variant="link" onClick={() => navigate('/vendors')}>
+                      Find a Vendor
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bookings.map((booking) => (
+                      <Card key={booking.id} className="border">
+                        <CardHeader>
+                          <CardTitle className="flex justify-between items-center">
+                            {booking.vendorName} - {booking.serviceName}
+                            {booking.status === 'pending' && (
+                              <Badge variant="secondary">Pending</Badge>
+                            )}
+                            {booking.status === 'confirmed' && (
+                              <Badge className="bg-green-500 text-white">Confirmed</Badge>
+                            )}
+                            {booking.status === 'cancelled' && (
+                              <Badge variant="destructive">Cancelled</Badge>
+                            )}
+                            {booking.status === 'completed' && (
+                              <Badge className="bg-gray-500 text-white">Completed</Badge>
+                            )}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm font-medium">Date & Time</p>
+                              <p>{format(new Date(booking.date), 'PPP')} at {booking.time}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">Amount</p>
+                              <p>₱{booking.amount.toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">Payment Status</p>
+                              <p>{booking.paymentStatus}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">Booking ID</p>
+                              <p>{booking.id}</p>
+                            </div>
+                          </div>
+                          
+                          {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                            <div className="flex justify-end gap-2">
+                              {booking.paymentStatus !== 'paid' && (
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setSelectedBooking(booking);
+                                    setShowPaymentForm(true);
+                                  }}
+                                >
+                                  Make Payment
+                                </Button>
+                              )}
+                              <Button
+                                variant="destructive"
+                                onClick={() => handleCancelBooking(booking.id)}
+                              >
+                                Cancel Booking
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-
-          {/* Main Content */}
-          <div className="md:w-3/4">
-            {activeTab === 'overview' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dashboard Overview</CardTitle>
-                  <CardDescription>Your account summary at a glance</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{userBookings.length}</div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{userBookings.filter(b => new Date(b.date) > new Date()).length}</div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Unread Notifications</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">{userNotifications.filter(n => !n.read).length}</div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+          </TabsContent>
+          
+          <TabsContent value="notifications" className="max-w-3xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold">Notifications</CardTitle>
+                <p className="text-muted-foreground">
+                  Stay up-to-date with important updates and alerts
+                </p>
+              </CardHeader>
+              <CardContent className="h-[400px]">
+                <ScrollArea className="h-full">
                   <div className="space-y-4">
-                    {userNotifications.slice(0, 3).map(notification => (
-                      <div key={notification.id} className="flex items-start p-3 rounded-lg bg-gray-50">
-                        <Bell className="h-5 w-5 text-kasadya-purple mr-2 mt-0.5" />
-                        <div>
-                          <h4 className="font-medium">{notification.title}</h4>
-                          <p className="text-sm text-gray-600">{notification.message}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                          </p>
-                        </div>
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-6">
+                        <p className="text-gray-600">No notifications yet.</p>
                       </div>
-                    ))}
-                    {userNotifications.length === 0 && (
-                      <p className="text-gray-500 text-center py-4">No recent activity</p>
+                    ) : (
+                      notifications.map((notification) => (
+                        <Card key={notification.id} className={`border ${!notification.read ? 'bg-gray-50' : ''}`}>
+                          <CardHeader className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <CardTitle className="text-sm font-medium">{notification.title}</CardTitle>
+                              <p className="text-sm text-gray-500">{notification.message}</p>
+                              <p className="text-xs text-gray-400">
+                                {format(new Date(notification.createdAt), 'PPP p')}
+                              </p>
+                            </div>
+                            <div className="flex-shrink-0">
+                              {!notification.read && (
+                                <Button variant="ghost" size="sm" onClick={() => markAsRead(notification.id)}>
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Mark as Read
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm" onClick={() => clearNotification(notification.id)}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      ))
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeTab === 'bookings' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Bookings</CardTitle>
-                  <CardDescription>Manage your event services bookings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {userBookings.length > 0 ? (
-                    <div className="space-y-4">
-                      {userBookings.map(booking => (
-                        <Card key={booking.id}>
-                          <CardContent className="p-4">
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                              <div>
-                                <h3 className="font-semibold">{booking.vendorName}</h3>
-                                <p className="text-sm text-gray-600">{booking.service}</p>
-                                <p className="text-sm">Date: {new Date(booking.date).toLocaleDateString()}</p>
-                              </div>
-                              <div className="mt-2 md:mt-0 space-y-2">
-                                <div className={`inline-block px-2 py-1 rounded-full text-xs ${
-                                  booking.status === 'confirmed' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                                </div>
-                                <p className="font-medium text-right">₱{booking.price.toLocaleString()}</p>
-                                <Button variant="outline" size="sm" className="w-full md:w-auto">
-                                  View Details
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-10">
-                      <Calendar className="h-12 w-12 mx-auto text-gray-400" />
-                      <h3 className="mt-4 text-lg font-medium">No bookings yet</h3>
-                      <p className="mt-1 text-gray-500">You haven't made any bookings with vendors yet.</p>
-                      <Button className="mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple">
-                        Browse Vendors
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {activeTab === 'payments' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment History</CardTitle>
-                  <CardDescription>Track your payments to vendors</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {paymentHistory.length > 0 ? (
-                    <div className="space-y-4">
-                      {paymentHistory.map(payment => (
-                        <div key={payment.id} className="flex items-center justify-between border-b pb-4">
-                          <div>
-                            <p className="font-medium">{payment.description}</p>
-                            <p className="text-sm text-gray-600">
-                              {new Date(payment.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">₱{payment.amount.toLocaleString()}</p>
-                            <span className="inline-block px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                              {payment.status}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-10">
-                      <CreditCard className="h-12 w-12 mx-auto text-gray-400" />
-                      <h3 className="mt-4 text-lg font-medium">No payment history</h3>
-                      <p className="mt-1 text-gray-500">You haven't made any payments yet.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-            
-            {activeTab === 'notifications' && (
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="profile" className="max-w-3xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold">My Profile</CardTitle>
+                <p className="text-muted-foreground">
+                  Manage your personal information and account preferences
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {!editProfile ? (
+                  // Profile view mode
                   <div>
-                    <CardTitle>Notifications</CardTitle>
-                    <CardDescription>Stay updated with important information</CardDescription>
-                  </div>
-                  {userNotifications.some(n => !n.read) && (
-                    <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
-                      Mark all as read
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {userNotifications.length > 0 ? (
-                    <div className="space-y-4">
-                      {userNotifications.map(notification => (
-                        <div 
-                          key={notification.id} 
-                          className={`p-4 rounded-lg ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-l-4 border-kasadya-purple'}`}
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-medium">{notification.title}</h3>
-                            <span className="text-xs text-gray-500">
-                              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-gray-600">{notification.message}</p>
-                          <div className="mt-2 flex justify-between">
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${
-                              notification.type === 'booking' 
-                                ? 'bg-green-100 text-green-800' 
-                                : notification.type === 'payment'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-purple-100 text-purple-800'
-                            }`}>
-                              {notification.type}
-                            </span>
-                            {!notification.read && (
-                              <span className="text-xs text-kasadya-purple">New</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-10">
-                      <Bell className="h-12 w-12 mx-auto text-gray-400" />
-                      <h3 className="mt-4 text-lg font-medium">No notifications</h3>
-                      <p className="mt-1 text-gray-500">You're all caught up!</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {activeTab === 'settings' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Settings</CardTitle>
-                  <CardDescription>Manage your profile and preferences</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-medium mb-2">Personal Information</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Full Name</label>
-                          <Input defaultValue={user.name} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Email</label>
-                          <Input defaultValue={user.email} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Account Type</label>
-                          <Input defaultValue={user.role.charAt(0).toUpperCase() + user.role.slice(1)} disabled />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Member Since</label>
-                          <Input defaultValue={user.dateJoined ? new Date(user.dateJoined).toLocaleDateString() : 'N/A'} disabled />
-                        </div>
+                    <div className="grid gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Full Name
+                        </label>
+                        <p className="text-gray-700">{user?.name}</p>
                       </div>
-                      <Button className="mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple">
-                        Save Changes
-                      </Button>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Email Address
+                        </label>
+                        <p className="text-gray-700">{user?.email}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Phone Number
+                        </label>
+                        <p className="text-gray-700">{user?.phone || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Address
+                        </label>
+                        <p className="text-gray-700">{user?.address || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <Button onClick={() => setEditProfile(true)} className="mt-4">
+                      Edit Profile
+                    </Button>
+                  </div>
+                ) : (
+                  // Profile edit mode
+                  <div>
+                    <div className="grid gap-4 mb-6">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium mb-1">
+                          Full Name
+                        </label>
+                        <Input
+                          id="name"
+                          value={userProfile.name}
+                          onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium mb-1">
+                          Email Address
+                        </label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={userProfile.email}
+                          onChange={(e) => setUserProfile({...userProfile, email: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="phone" className="block text-sm font-medium mb-1">
+                          Phone Number
+                        </label>
+                        <Input
+                          id="phone"
+                          value={userProfile.phone}
+                          onChange={(e) => setUserProfile({...userProfile, phone: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="address" className="block text-sm font-medium mb-1">
+                          Address
+                        </label>
+                        <Input
+                          id="address"
+                          value={userProfile.address}
+                          onChange={(e) => setUserProfile({...userProfile, address: e.target.value})}
+                        />
+                      </div>
                     </div>
                     
                     <div className="pt-4 border-t">
-                      <h3 className="text-lg font-medium mb-2">Password</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Current Password</label>
-                          <Input type="password" />
+                      <h3 className="text-lg font-medium mb-4">Change Password</h3>
+                      <div className="grid gap-4">
+                        <div>
+                          <label htmlFor="currentPassword" className="block text-sm font-medium mb-1">
+                            Current Password
+                          </label>
+                          <Input
+                            id="currentPassword"
+                            type="password"
+                            value={newPassword.current}
+                            onChange={(e) => setNewPassword({...newPassword, current: e.target.value})}
+                          />
                         </div>
-                        <div></div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">New Password</label>
-                          <Input type="password" />
+                        <div>
+                          <label htmlFor="newPassword" className="block text-sm font-medium mb-1">
+                            New Password
+                          </label>
+                          <Input
+                            id="newPassword"
+                            type="password"
+                            value={newPassword.password}
+                            onChange={(e) => setNewPassword({...newPassword, password: e.target.value})}
+                          />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Confirm New Password</label>
-                          <Input type="password" />
+                        <div>
+                          <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
+                            Confirm New Password
+                          </label>
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            value={newPassword.confirm}
+                            onChange={(e) => setNewPassword({...newPassword, confirm: e.target.value})}
+                          />
                         </div>
                       </div>
-                      <Button className="mt-4" variant="outline">
+                      
+                      {passwordError && (
+                        <div className="mt-2 text-red-500 text-sm">
+                          {passwordError}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 mt-6">
+                      <Button variant="outline" onClick={() => setEditProfile(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleChangePassword}>
                         Change Password
                       </Button>
-                    </div>
-
-                    <div className="pt-4 border-t">
-                      <h3 className="text-lg font-medium mb-2">Notification Preferences</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm">Email notifications</label>
-                          <input type="checkbox" className="toggle toggle-primary" defaultChecked />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm">SMS notifications</label>
-                          <input type="checkbox" className="toggle toggle-primary" />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm">Marketing emails</label>
-                          <input type="checkbox" className="toggle toggle-primary" />
-                        </div>
-                      </div>
-                      <Button className="mt-4" variant="outline">
-                        Save Preferences
+                      <Button onClick={handleProfileUpdate}>
+                        Save Changes
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
+                
+                <div className="pt-8 border-t">
+                  <h3 className="text-lg font-medium mb-4">Danger Zone</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Be careful, these actions can have serious consequences.
+                  </p>
+                  <Button variant="destructive" onClick={handleDeleteAccount}>
+                    Delete Account
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Payment Form Modal */}
+      {selectedBooking && showPaymentForm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Make Payment for Booking
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Enter the amount you wish to pay for booking ID: {selectedBooking.id}.
+                </p>
+              </div>
+              <Input
+                type="number"
+                placeholder="Enter amount"
+                className="mt-4"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+              />
+              <div className="items-center px-4 py-3">
+                <Button
+                  variant="outline"
+                  className="px-4 py-2 rounded text-gray-500 hover:bg-gray-100"
+                  onClick={() => setShowPaymentForm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="ml-4 px-4 py-2 rounded bg-green-500 text-white hover:bg-green-700"
+                  onClick={() => handlePayment(selectedBooking.id)}
+                >
+                  Pay Now
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </Layout>
   );
 };
