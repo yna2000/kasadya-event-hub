@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
@@ -28,7 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBooking } from '@/contexts/BookingContext'; // Fixed: changed from useBookings to useBooking
+import { useBooking } from '@/contexts/BookingContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 
 const bookingSchema = z.object({
@@ -58,7 +57,7 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { createBooking } = useBooking(); // Fixed: changed from useBookings to useBooking
+  const { createBooking } = useBooking();
   const { addNotification } = useNotifications();
 
   const form = useForm<BookingFormData>({
@@ -87,7 +86,7 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
     const success = await createBooking({
       vendorId: vendor.id,
       vendorName: vendor.name,
-      customerId: user.id,
+      userId: user.id, // Changed from customerId to userId to match the Booking type
       customerName: user.name,
       service: service,
       date: data.date.toISOString(),
@@ -119,6 +118,7 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
     }
   };
 
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
