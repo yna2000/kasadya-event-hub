@@ -1,11 +1,11 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useAuth } from '@/contexts/AuthContext';
+import Layout from '@/components/layout/Layout';
 
 const OtpVerification = () => {
   const [otp, setOtp] = useState("");
@@ -14,6 +14,7 @@ const OtpVerification = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { login } = useAuth();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Extract the email and password from location state
@@ -61,18 +62,14 @@ const OtpVerification = () => {
       // In a real app, this would verify with a server
       // For demo purposes, we'll use the mock OTP "123456"
       if (otp === "123456") {
-        // Get login function from localStorage
+        // Get login data from localStorage
         const loginData = localStorage.getItem("pendingLogin");
         
         if (loginData) {
           const { email, password } = JSON.parse(loginData);
           
-          // Manually import auth context to avoid circular dependencies
-          const authModule = await import('@/contexts/AuthContext');
-          const authContext = authModule.useAuth();
-          
           // Perform login
-          const success = await authContext.login(email, password);
+          const success = await login(email, password);
           
           if (success) {
             // Clear the pendingLogin from localStorage
