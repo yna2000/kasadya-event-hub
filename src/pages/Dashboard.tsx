@@ -134,9 +134,16 @@ const Dashboard = () => {
                 Manage your bookings, profile, and notifications
               </p>
             </div>
-            <Button variant="outline" onClick={() => navigate('/vendors')}>
-              Book a Vendor
-            </Button>
+            <div className="flex gap-3">
+              {user?.isAdmin && (
+                <Button variant="outline" onClick={() => navigate('/admin')}>
+                  Admin Dashboard
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => navigate('/vendors')}>
+                Book a Vendor
+              </Button>
+            </div>
           </div>
         </div>
       </section>

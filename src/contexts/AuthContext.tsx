@@ -6,21 +6,19 @@ export type UserType = {
   id: string;
   name: string;
   email: string;
-  role: 'customer' | 'vendor' | 'admin';
-  profileImage?: string;
   phone?: string;
   address?: string;
-  dateJoined: string;
-} | null;
+  isAdmin?: boolean; // Added isAdmin field
+  createdAt: string;
+  lastLogin: string;
+};
 
 interface AuthContextType {
-  user: UserType;
+  user: UserType | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, role: 'customer' | 'vendor') => Promise<boolean>;
+  register: (name: string, email: string, password: string, phone?: string, address?: string) => Promise<boolean>;
   logout: () => void;
-  isAuthenticated: boolean;
-  updateUserProfile: (userData: Partial<Omit<UserType, 'id'>>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,22 +80,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call delay
+      // In a real app, this would be an API call
+      // For demo, we'll use local storage and simulate a network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Check if user exists in localStorage (for demo purposes)
       const storedUsers = localStorage.getItem('users');
-      let users: any[] = [];
-      
       if (storedUsers) {
-        users = JSON.parse(storedUsers);
-        const foundUser = users.find(u => u.email === email);
+        const users = JSON.parse(storedUsers);
+        const user = users.find((u: any) => u.email === email);
         
-        // In a real app, you would verify the password with bcrypt or similar
-        if (foundUser && foundUser.password === password) {
-          // Remove password before storing in state
-          const { password: _, ...userWithoutPassword } = foundUser;
+        if (user && user.password === password) {
+          // Create a user object without the password
+          const { password: _, ...userWithoutPassword } = user;
           
+          // Update last login
+          userWithoutPassword.lastLogin = new Date().toISOString();
+          
+          // Store in state and local storage
           setUser(userWithoutPassword);
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
           
@@ -111,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           toast({
             title: "Login successful",
-            description: "Welcome back!",
+            description: "Welcome back to Kasadya Marketplace!"
           });
           
           setIsLoading(false);
@@ -119,10 +118,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
+      // If we get here, login failed
       toast({
         title: "Login failed",
-        description: "Invalid credentials",
-        variant: "destructive",
+        description: "Invalid email or password. Please try again.",
+        variant: "destructive"
       });
       
       setIsLoading(false);
@@ -130,59 +130,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Login error:', error);
       toast({
-        title: "Login failed",
-        description: "An error occurred during login",
-        variant: "destructive",
+        title: "Login error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
       });
+      
       setIsLoading(false);
       return false;
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: 'customer' | 'vendor') => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    phone: string = '',
+    address: string = ''
+  ) => {
     setIsLoading(true);
     try {
-      // Simulate API call delay
+      // In a real app, this would be an API call
+      // For demo, we'll use local storage and simulate a network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Check if email already exists
-      const storedUsers = localStorage.getItem('users');
-      let users: any[] = [];
+      // Check if user already exists
+      const storedUsers = localStorage.getItem('users') || '[]';
+      const users = JSON.parse(storedUsers);
+      const existingUser = users.find((u: any) => u.email === email);
       
-      if (storedUsers) {
-        users = JSON.parse(storedUsers);
-        const existingUser = users.find(u => u.email === email);
+      if (existingUser) {
+        toast({
+          title: "Registration failed",
+          description: "Email already exists. Please use a different email or login.",
+          variant: "destructive"
+        });
         
-        if (existingUser) {
-          toast({
-            title: "Registration failed",
-            description: "Email already in use",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return false;
-        }
+        setIsLoading(false);
+        return false;
       }
       
-      // Create new user
+      // Create a new user
       const newUser = {
         id: `user-${Math.random().toString(36).substring(2, 9)}`,
         name,
         email,
-        password, // In a real app, you would hash this password
-        role,
-        phone: '',
-        address: '',
-        dateJoined: new Date().toISOString(),
+        password,
+        phone,
+        address,
+        isAdmin: false, // Default to non-admin
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
       };
       
-      // Add user to users array
+      // Add to users array and store
       users.push(newUser);
       localStorage.setItem('users', JSON.stringify(users));
       
-      // Remove password before storing in state
+      // Create a user object without the password
       const { password: _, ...userWithoutPassword } = newUser;
       
+      // Store in state and local storage
       setUser(userWithoutPassword);
       localStorage.setItem('user', JSON.stringify(userWithoutPassword));
       
@@ -196,7 +203,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       toast({
         title: "Registration successful",
-        description: `Welcome to Kasadya Marketplace, ${name}!`,
+        description: "Welcome to Kasadya Marketplace!"
       });
       
       setIsLoading(false);
@@ -204,10 +211,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Registration error:', error);
       toast({
-        title: "Registration failed",
-        description: "An error occurred during registration",
-        variant: "destructive",
+        title: "Registration error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
       });
+      
       setIsLoading(false);
       return false;
     }
@@ -216,37 +224,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    
     toast({
       title: "Logged out",
-      description: "You have been logged out successfully",
-    });
-  };
-
-  const updateUserProfile = (userData: Partial<Omit<UserType, 'id'>>) => {
-    if (!user) return;
-    
-    const updatedUser = { ...user, ...userData };
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    
-    // Update user in users array
-    const storedUsers = localStorage.getItem('users');
-    
-    if (storedUsers) {
-      const users = JSON.parse(storedUsers);
-      const updatedUsers = users.map((u: any) => {
-        if (u.id === user.id) {
-          return { ...u, ...userData, password: u.password }; // Keep the password unchanged
-        }
-        return u;
-      });
-      
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-    }
-    
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been updated successfully",
+      description: "You have been successfully logged out."
     });
   };
 
@@ -256,9 +237,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       login,
       register,
-      logout,
-      isAuthenticated: !!user,
-      updateUserProfile,
+      logout
     }}>
       {children}
     </AuthContext.Provider>
