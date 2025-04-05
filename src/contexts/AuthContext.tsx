@@ -16,6 +16,7 @@ export type UserType = {
 interface AuthContextType {
   user: UserType | null;
   isLoading: boolean;
+  isAuthenticated: boolean; // Added isAuthenticated property
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string, phone?: string, address?: string) => Promise<boolean>;
   logout: () => void;
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
+  // Create a local function to create notifications without using the NotificationContext
   const createNotification = (userId: string, title: string, message: string, type: 'booking' | 'payment' | 'system') => {
     // Get existing notifications from localStorage
     const storedNotifications = localStorage.getItem('notifications');
@@ -235,6 +237,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{
       user,
       isLoading,
+      isAuthenticated: !!user, // Add isAuthenticated property
       login,
       register,
       logout
