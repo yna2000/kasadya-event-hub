@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, login } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Create admin user if it doesn't exist
@@ -45,9 +44,7 @@ const Login = () => {
     };
     
     createAdminUser();
-  }, []);
-
-  useEffect(() => {
+    
     // If already logged in, redirect to dashboard
     if (user) {
       if (user.isAdmin) {
@@ -71,11 +68,51 @@ const Login = () => {
     }
     
     setIsLoading(true);
-    const success = await login(email, password);
-    setIsLoading(false);
     
-    if (success) {
-      // Redirect is handled in the useEffect hook
+    try {
+      // Validate credentials before redirecting to OTP
+      const storedUsers = localStorage.getItem('users');
+      if (storedUsers) {
+        const users = JSON.parse(storedUsers);
+        const user = users.find((u: any) => u.email === email);
+        
+        if (user && user.password === password) {
+          // Store pending login credentials in localStorage
+          localStorage.setItem("pendingLogin", JSON.stringify({ email, password }));
+          
+          // Simulate OTP being sent (in a real app, this would be an API call)
+          setTimeout(() => {
+            // Redirect to OTP verification page with email and password
+            navigate('/verify-otp', { state: { email, password } });
+          }, 1000);
+          
+          toast({
+            title: "Verification Required",
+            description: "We've sent a verification code to your email",
+          });
+        } else {
+          toast({
+            title: "Login failed",
+            description: "Invalid email or password. Please try again.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Login failed",
+          description: "No users found. Please register first.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -120,7 +157,7 @@ const Login = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? "Processing..." : "Continue"}
                   </Button>
                 </div>
               </form>

@@ -16,6 +16,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import VendorServicePage from "./pages/VendorServicePage";
+import OtpVerification from "./pages/OtpVerification";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { BookingProvider } from "./contexts/BookingContext";
@@ -42,6 +43,7 @@ const App = () => {
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/verify-otp" element={<OtpVerification />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
