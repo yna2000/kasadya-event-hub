@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useAuth } from '@/contexts/AuthContext';
-import Layout from '@/components/layout/Layout';
 
 const OtpVerification = () => {
   const [otp, setOtp] = useState("");
@@ -131,71 +131,69 @@ const OtpVerification = () => {
   };
 
   return (
-    <Layout>
-      <div className="container mx-auto py-12">
-        <div className="flex justify-center">
-          <Card className="w-full max-w-md">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">Verify Your Identity</CardTitle>
-              <CardDescription>
-                Enter the 6-digit code sent to your email {email && <strong>{email}</strong>}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-center py-4">
-                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-              
-              <div className="mt-2">
-                <p className="text-center text-sm text-muted-foreground">
-                  For demo purposes, use the code: <strong>123456</strong>
-                </p>
-              </div>
+    <div className="container mx-auto py-12">
+      <div className="flex justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">Verify Your Identity</CardTitle>
+            <CardDescription>
+              Enter the 6-digit code sent to your email {email && <strong>{email}</strong>}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-center py-4">
+              <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            
+            <div className="mt-2">
+              <p className="text-center text-sm text-muted-foreground">
+                For demo purposes, use the code: <strong>123456</strong>
+              </p>
+            </div>
 
-              <Button 
-                onClick={handleVerify} 
-                className="w-full" 
-                disabled={isLoading || otp.length !== 6}
-              >
-                {isLoading ? "Verifying..." : "Verify & Login"}
-              </Button>
-            </CardContent>
-            <CardFooter className="flex-col space-y-2">
-              <div className="text-center text-sm text-muted-foreground">
-                Didn't receive the code?{" "}
-                {timeLeft > 0 ? (
-                  <span>Resend in {timeLeft} seconds</span>
-                ) : (
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto text-blue-500 hover:text-blue-700"
-                    onClick={handleResendOtp}
-                  >
-                    Resend code
-                  </Button>
-                )}
-              </div>
-              <Button 
-                variant="ghost" 
-                className="mt-2" 
-                onClick={() => navigate('/login')}
-              >
-                Back to Login
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+            <Button 
+              onClick={handleVerify} 
+              className="w-full" 
+              disabled={isLoading || otp.length !== 6}
+            >
+              {isLoading ? "Verifying..." : "Verify & Login"}
+            </Button>
+          </CardContent>
+          <CardFooter className="flex-col space-y-2">
+            <div className="text-center text-sm text-muted-foreground">
+              Didn't receive the code?{" "}
+              {timeLeft > 0 ? (
+                <span>Resend in {timeLeft} seconds</span>
+              ) : (
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto text-blue-500 hover:text-blue-700"
+                  onClick={handleResendOtp}
+                >
+                  Resend code
+                </Button>
+              )}
+            </div>
+            <Button 
+              variant="ghost" 
+              className="mt-2" 
+              onClick={() => navigate('/login')}
+            >
+              Back to Login
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
-    </Layout>
+    </div>
   );
 };
 
