@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import VendorBookingForm from '@/components/booking/VendorBookingForm';
+import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -77,6 +77,7 @@ const VendorServicePage = () => {
   const [vendorServices, setVendorServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   
   useEffect(() => {
     // In real app, fetch vendor from API
@@ -105,6 +106,23 @@ const VendorServicePage = () => {
       </div>
     );
   }
+
+  const handleBookNow = () => {
+    // Check if terms were already accepted
+    const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
+    if (termsAccepted) {
+      // If terms were accepted, open booking form directly
+      setShowBookingForm(true);
+    } else {
+      // Otherwise, show terms modal first
+      setIsTermsModalOpen(true);
+    }
+  };
+
+  const handleAcceptTerms = () => {
+    setIsTermsModalOpen(false);
+    setShowBookingForm(true);
+  };
 
   return (
     <>
@@ -154,7 +172,7 @@ const VendorServicePage = () => {
                 
                 <Button 
                   className="bg-kasadya-purple hover:bg-kasadya-deep-purple w-full md:w-auto"
-                  onClick={() => setShowBookingForm(true)}
+                  onClick={handleBookNow}
                 >
                   Book Now
                 </Button>
@@ -198,9 +216,10 @@ const VendorServicePage = () => {
                             <div className="mt-4">
                               <Button 
                                 className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setSelectedService(service);
-                                  setShowBookingForm(true);
+                                  handleBookNow();
                                 }}
                               >
                                 Book This Package
@@ -268,7 +287,7 @@ const VendorServicePage = () => {
                 <div className="border-t border-gray-200 mt-4 pt-4">
                   <Button 
                     className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
-                    onClick={() => setShowBookingForm(true)}
+                    onClick={handleBookNow}
                   >
                     Book This Vendor
                   </Button>
@@ -278,6 +297,13 @@ const VendorServicePage = () => {
           </div>
         </div>
       </div>
+      
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditionsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        onAccept={handleAcceptTerms}
+      />
       
       {/* Booking Form */}
       {showBookingForm && (

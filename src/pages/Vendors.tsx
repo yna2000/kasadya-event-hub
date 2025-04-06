@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Star, MapPin, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import VendorBookingForm from '@/components/booking/VendorBookingForm';
+import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Vendors = () => {
@@ -22,7 +22,17 @@ const Vendors = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const { user } = useAuth();
+  
+  // Check if terms were already accepted
+  useEffect(() => {
+    const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
+    if (termsAccepted) {
+      // Terms were previously accepted
+      console.log('Terms were previously accepted');
+    }
+  }, []);
   
   // Mock data for vendors - would come from an API in a real application
   const vendors = [
@@ -110,6 +120,20 @@ const Vendors = () => {
 
   const handleContactVendor = (vendor: any) => {
     setSelectedVendor(vendor);
+    
+    // Check if terms were already accepted
+    const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
+    if (termsAccepted) {
+      // If terms were accepted, open booking form directly
+      setIsBookingFormOpen(true);
+    } else {
+      // Otherwise, show terms modal first
+      setIsTermsModalOpen(true);
+    }
+  };
+
+  const handleAcceptTerms = () => {
+    setIsTermsModalOpen(false);
     setIsBookingFormOpen(true);
   };
 
@@ -321,6 +345,13 @@ const Vendors = () => {
           </Button>
         </div>
       </section>
+
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditionsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        onAccept={handleAcceptTerms}
+      />
 
       {/* Booking Form Dialog */}
       {selectedVendor && (
