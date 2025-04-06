@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Search, Star, MapPin, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,8 +17,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Vendors = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
@@ -101,8 +102,8 @@ const Vendors = () => {
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           vendor.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLocation = locationFilter === '' || vendor.location === locationFilter;
-    const matchesCategory = categoryFilter === '' || vendor.category === categoryFilter;
+    const matchesLocation = locationFilter === 'all' || vendor.location === locationFilter;
+    const matchesCategory = categoryFilter === 'all' || vendor.category === categoryFilter;
     
     return matchesSearch && matchesLocation && matchesCategory;
   });
@@ -158,7 +159,7 @@ const Vendors = () => {
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Locations</SelectItem>
+                    <SelectItem value="all">All Locations</SelectItem>
                     {locations.map((location) => (
                       <SelectItem key={location} value={location}>{location}</SelectItem>
                     ))}
@@ -173,7 +174,7 @@ const Vendors = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category} value={category}>{category}</SelectItem>
                     ))}
