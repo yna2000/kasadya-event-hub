@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import BookingForm from '@/components/booking/BookingForm';
+import VendorBookingForm from '@/components/booking/VendorBookingForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -280,12 +280,18 @@ const VendorServicePage = () => {
       </div>
       
       {/* Booking Form */}
-      {showBookingForm && selectedService && (
-        <BookingForm
+      {showBookingForm && (
+        <VendorBookingForm
           isOpen={showBookingForm}
           onClose={() => setShowBookingForm(false)}
-          vendor={vendor}
-          service={selectedService}
+          vendor={{
+            id: vendor.id,
+            name: vendor.name,
+            category: vendor.category,
+            location: vendor.location,
+            image: vendor.portfolio[0]
+          }}
+          service={selectedService ? selectedService.name : vendor.category}
         />
       )}
     </>
