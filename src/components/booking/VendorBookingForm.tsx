@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import { useNotifications } from '@/contexts/NotificationContext';
+import BookingOtpVerification from './BookingOtpVerification';
 
 const bookingSchema = z.object({
   date: z.date({
@@ -59,6 +61,8 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
   const { user } = useAuth();
   const { createBooking } = useBooking();
   const { addNotification } = useNotifications();
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [bookingData, setBookingData] = useState<BookingFormData | null>(null);
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -79,6 +83,20 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
       return;
     }
 
+    // Store booking data and show OTP verification
+    setBookingData(data);
+    setShowOtpVerification(true);
+
+    // Simulate sending OTP to user's email
+    toast({
+      title: "OTP Sent",
+      description: `A verification code has been sent to ${user.email}`,
+    });
+  };
+
+  const handleOtpVerified = async () => {
+    if (!bookingData || !user) return;
+
     // In a real app, the amount would be calculated based on the service
     const amount = Math.floor(Math.random() * 500) + 100;
 
@@ -90,10 +108,10 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
       serviceId: vendor.id, // Using vendor.id as a fallback
       serviceName: service,
       serviceDescription: `${service} provided by ${vendor.name}`,
-      date: data.date.toISOString(),
-      time: data.time,
+      date: bookingData.date.toISOString(),
+      time: bookingData.time,
       amount: amount,
-      notes: data.notes || '',
+      notes: bookingData.notes || '',
     });
 
     if (success) {
@@ -111,7 +129,7 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
       addNotification({
         userId: mockVendorUserId,
         title: 'New Booking Request',
-        message: `You have a new booking request from ${user.name} for ${service} on ${format(data.date, 'PPP')}.`,
+        message: `You have a new booking request from ${user.name} for ${service} on ${format(bookingData.date, 'PPP')}.`,
         type: 'booking',
       });
 
@@ -120,97 +138,110 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
     }
   };
 
-  
+  const handleCancelOtp = () => {
+    setShowOtpVerification(false);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Book {vendor?.name}</DialogTitle>
-          <DialogDescription>
-            Fill out the form below to request a booking for {service}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
+        {!showOtpVerification ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Book {vendor?.name}</DialogTitle>
+              <DialogDescription>
+                Fill out the form below to request a booking for {service}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={`w-full pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""}`}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                            disabled={(date) => date < new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time</FormLabel>
                       <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={`w-full pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""}`}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
+                        <Input type="time" {...field} />
                       </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        disabled={(date) => date < new Date()}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="time"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Time</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Special Requests (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Any special requirements or notes for the vendor" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Special Requests (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Any special requirements or notes for the vendor" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} className="mr-2">
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-kasadya-purple hover:bg-kasadya-deep-purple">
-                Request Booking
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={onClose} className="mr-2">
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-kasadya-purple hover:bg-kasadya-deep-purple">
+                    Continue
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </>
+        ) : (
+          <BookingOtpVerification 
+            onVerified={handleOtpVerified} 
+            onCancel={handleCancelOtp}
+            email={user?.email}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

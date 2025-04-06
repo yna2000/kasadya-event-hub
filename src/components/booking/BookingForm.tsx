@@ -27,6 +27,11 @@ import { cn } from '@/lib/utils';
 import { useBooking } from '@/contexts/BookingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { 
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+import BookingOtpVerification from './BookingOtpVerification';
 
 interface BookingFormProps {
   vendorId: string;
@@ -61,6 +66,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [bookingData, setBookingData] = useState<BookingFormData | null>(null);
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -82,24 +89,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      const booking = await createBooking({
-        userId: user.id,
-        vendorId,
-        vendorName,
-        serviceId,
-        serviceName,
-        serviceDescription,
-        date: data.date.toISOString().split('T')[0],
-        time: data.time,
-        amount,
-        notes: data.notes || '',
-      });
+      // Store booking data and trigger OTP verification
+      setBookingData(data);
+      setShowOtpVerification(true);
 
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        navigate('/dashboard');
-      }
+      // Simulate sending OTP
+      toast({
+        title: "OTP Sent",
+        description: `A verification code has been sent to ${user.email}`,
+      });
     } catch (error) {
       console.error('Booking error:', error);
       toast({
@@ -110,6 +108,36 @@ const BookingForm: React.FC<BookingFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleOtpVerified = async () => {
+    if (!bookingData || !user) return;
+    
+    const success = await createBooking({
+      userId: user.id,
+      vendorId,
+      vendorName,
+      serviceId,
+      serviceName,
+      serviceDescription,
+      date: bookingData.date.toISOString().split('T')[0],
+      time: bookingData.time,
+      amount,
+      notes: bookingData.notes || '',
+    });
+
+    if (success) {
+      setShowOtpVerification(false);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  };
+
+  const handleCancelOtp = () => {
+    setShowOtpVerification(false);
   };
 
   // Generate time slot options
@@ -124,113 +152,126 @@ const BookingForm: React.FC<BookingFormProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold mb-2">Book This Service</h2>
-      <div className="mb-6">
-        <p className="font-medium">{serviceName}</p>
-        <p className="text-sm text-gray-600 mb-2">{serviceDescription}</p>
-        <p className="text-lg font-semibold text-kasadya-purple">₱{amount.toLocaleString()}</p>
+    <>
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold mb-2">Book This Service</h2>
+        <div className="mb-6">
+          <p className="font-medium">{serviceName}</p>
+          <p className="text-sm text-gray-600 mb-2">{serviceDescription}</p>
+          <p className="text-lg font-semibold text-kasadya-purple">₱{amount.toLocaleString()}</p>
+        </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Event Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => 
+                          date < new Date(new Date().setHours(0, 0, 0, 0))
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="time"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preferred Time</FormLabel>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    {...field}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Select a time</option>
+                    {timeSlots.map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Special Requests or Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add any special requirements or questions here..."
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button 
+              type="submit" 
+              className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Processing...' : 'Continue to Verification'}
+            </Button>
+            
+            <p className="text-xs text-gray-500 text-center mt-2">
+              By booking this service, you agree to our Terms and Conditions.
+            </p>
+          </form>
+        </Form>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Event Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => 
-                        date < new Date(new Date().setHours(0, 0, 0, 0))
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
+      {/* OTP Verification Dialog */}
+      <Dialog open={showOtpVerification} onOpenChange={setShowOtpVerification}>
+        <DialogContent className="sm:max-w-[500px]">
+          <BookingOtpVerification 
+            onVerified={handleOtpVerified} 
+            onCancel={handleCancelOtp}
+            email={user?.email}
           />
-
-          <FormField
-            control={form.control}
-            name="time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Preferred Time</FormLabel>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  {...field}
-                  defaultValue=""
-                >
-                  <option value="" disabled>Select a time</option>
-                  {timeSlots.map((time) => (
-                    <option key={time} value={time}>
-                      {time}
-                    </option>
-                  ))}
-                </select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Special Requests or Notes</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Add any special requirements or questions here..."
-                    className="resize-none"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <Button 
-            type="submit" 
-            className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Processing...' : 'Book Now'}
-          </Button>
-          
-          <p className="text-xs text-gray-500 text-center mt-2">
-            By booking this service, you agree to our Terms and Conditions.
-          </p>
-        </form>
-      </Form>
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
