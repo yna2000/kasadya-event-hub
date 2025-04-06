@@ -1,6 +1,5 @@
 
 import { Heart, Star, Users, Shield, Sparkles, MessageCircle } from 'lucide-react';
-import Layout from '@/components/layout/Layout';
 
 const About = () => {
   // Core values data
@@ -66,7 +65,7 @@ const About = () => {
   ];
 
   return (
-    <Layout>
+    <>
       {/* Hero Section */}
       <section className="kasadya-gradient text-white py-20">
         <div className="container mx-auto px-4 text-center">
@@ -186,7 +185,7 @@ const About = () => {
           </div>
         </div>
       </section>
-    </Layout>
+    </>
   );
 };
 

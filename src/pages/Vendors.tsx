@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Search, Star, MapPin, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import Layout from '@/components/layout/Layout';
 import VendorBookingForm from '@/components/booking/VendorBookingForm';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -115,7 +113,7 @@ const Vendors = () => {
   };
 
   return (
-    <Layout>
+    <>
       {/* Hero Section */}
       <section className="kasadya-gradient text-white py-20">
         <div className="container mx-auto px-4 text-center">
@@ -331,7 +329,7 @@ const Vendors = () => {
           vendor={selectedVendor}
         />
       )}
-    </Layout>
+    </>
   );
 };
 

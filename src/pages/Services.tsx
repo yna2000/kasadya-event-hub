@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { Calendar, Music, Gift, Camera, Cake, Users, Award, Home, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Layout from '@/components/layout/Layout';
 
 const Services = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -95,7 +94,7 @@ const Services = () => {
   const popularServices = services.filter(service => service.popular);
 
   return (
-    <Layout>
+    <>
       {/* Hero Section */}
       <section className="kasadya-gradient text-white py-20">
         <div className="container mx-auto px-4 text-center">
@@ -223,7 +222,7 @@ const Services = () => {
           </div>
         </div>
       </section>
-    </Layout>
+    </>
   );
 };
 

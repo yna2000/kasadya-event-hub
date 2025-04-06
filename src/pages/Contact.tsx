@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import Layout from '@/components/layout/Layout';
 
 const Contact = () => {
   const { toast } = useToast();
@@ -48,7 +47,7 @@ const Contact = () => {
   };
 
   return (
-    <Layout>
+    <>
       {/* Hero Section */}
       <section className="kasadya-gradient text-white py-20">
         <div className="container mx-auto px-4 text-center">
@@ -245,7 +244,7 @@ const Contact = () => {
           </div>
         </div>
       </section>
-    </Layout>
+    </>
   );
 };
 

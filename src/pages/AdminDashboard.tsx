@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -12,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import {
@@ -106,7 +104,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <Layout>
+    <>
       <section className="bg-gray-100 py-6 border-b">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
@@ -381,7 +379,7 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </>
   );
 };
 

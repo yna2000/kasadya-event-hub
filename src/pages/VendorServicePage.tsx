@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
 import BookingForm from '@/components/booking/BookingForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -65,11 +64,11 @@ const vendors = [
     yearsInBusiness: 8,
     portfolio: [
       'https://images.unsplash.com/photo-1555244162-803834f70033',
-      'https://images.unsplash.com/photo-1564508211780-5ff8ea968915',
-      'https://images.unsplash.com/photo-1565538810643-b5bdb714032a',
+      'https://images.unsplash.com/photo-1556910103-1c02745aae4d',
+      'https://images.unsplash.com/photo-1574966739987-61326238289a',
     ],
     availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-  },
+  }
 ];
 
 const VendorServicePage = () => {
@@ -78,297 +77,218 @@ const VendorServicePage = () => {
   const [vendorServices, setVendorServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
-
+  
   useEffect(() => {
-    // In a real app, fetch the vendor from an API
+    // In real app, fetch vendor from API
     const foundVendor = vendors.find(v => v.id === vendorId);
-    setVendor(foundVendor);
-
     if (foundVendor) {
-      // Filter services by vendor category
-      const vendorServiceList = services.filter(s => s.category === foundVendor.category);
-      setVendorServices(vendorServiceList);
+      setVendor(foundVendor);
       
-      // Set the first service as selected by default
-      if (vendorServiceList.length > 0) {
-        setSelectedService(vendorServiceList[0]);
+      // Filter services based on vendor category
+      const matchingServices = services.filter(s => s.category === foundVendor.category);
+      setVendorServices(matchingServices);
+      
+      if (matchingServices.length > 0) {
+        setSelectedService(matchingServices[0]);
       }
     }
   }, [vendorId]);
 
   if (!vendor) {
     return (
-      <Layout>
-        <div className="container mx-auto py-10 px-4 text-center">
-          <h1 className="text-2xl font-semibold mb-4">Vendor Not Found</h1>
-          <p className="mb-6">The vendor you're looking for doesn't exist or has been removed.</p>
-          <Link to="/vendors">
-            <Button className="bg-kasadya-purple hover:bg-kasadya-deep-purple">
-              Browse All Vendors
-            </Button>
-          </Link>
-        </div>
-      </Layout>
+      <div className="container mx-auto px-4 py-20 text-center">
+        <h2 className="text-2xl font-bold mb-4">Vendor not found</h2>
+        <p className="mb-6">The vendor you are looking for doesn't exist or has been removed.</p>
+        <Button asChild>
+          <Link to="/vendors">Browse Vendors</Link>
+        </Button>
+      </div>
     );
   }
 
-  const handleServiceSelect = (service: any) => {
-    setSelectedService(service);
-    setShowBookingForm(false);
-  };
-
-  const handleBookNowClick = () => {
-    setShowBookingForm(true);
-  };
-
-  const handleBookingSuccess = () => {
-    setShowBookingForm(false);
-  };
-
-  // Generate star rating display
-  const renderStars = (rating: number) => {
-    const stars = [];
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <Star
-          key={i}
-          className={`h-4 w-4 ${i < Math.floor(rating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
-        />
-      );
-    }
-    return stars;
-  };
-
   return (
-    <Layout>
-      <div className="container mx-auto py-10 px-4">
-        {/* Vendor Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h1 className="text-2xl font-semibold mb-2">{vendor.name}</h1>
-          <div className="flex items-center mb-2">
-            <div className="flex mr-2">
-              {renderStars(vendor.rating)}
-            </div>
-            <span className="text-gray-600">
-              {vendor.rating} ({vendor.reviewCount} reviews)
-            </span>
-          </div>
-          <p className="text-gray-700 mb-4">{vendor.description}</p>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center text-gray-600">
-              <MapPin className="h-4 w-4 mr-2" />
-              <span>{vendor.location}</span>
-            </div>
-            <div className="flex items-center text-gray-600">
-              <Phone className="h-4 w-4 mr-2" />
-              <span>{vendor.contactNumber}</span>
-            </div>
-            <div className="flex items-center text-gray-600">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span>{vendor.yearsInBusiness} years in business</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Main Content */}
-          <div className="md:w-2/3">
-            <Tabs defaultValue="services">
-              <TabsList className="mb-6">
-                <TabsTrigger value="services">Services</TabsTrigger>
-                <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews</TabsTrigger>
-                <TabsTrigger value="about">About</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="services">
-                <h2 className="text-xl font-semibold mb-4">Available Services</h2>
-                <div className="space-y-4">
-                  {vendorServices.map((service) => (
-                    <Card 
-                      key={service.id}
-                      className={`cursor-pointer transition-all ${selectedService?.id === service.id ? 'ring-2 ring-kasadya-purple' : ''}`}
-                      onClick={() => handleServiceSelect(service)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <h3 className="font-semibold">{service.name}</h3>
-                            <p className="text-sm text-gray-600">{service.description}</p>
-                          </div>
-                          <div className="mt-2 md:mt-0">
-                            <p className="font-medium text-kasadya-purple text-lg">₱{service.price.toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="portfolio">
-                <h2 className="text-xl font-semibold mb-4">Portfolio</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {vendor.portfolio.map((image: string, index: number) => (
-                    <div key={index} className="rounded-lg overflow-hidden h-48">
-                      <img 
-                        src={`${image}?auto=format&w=500&h=300`} 
-                        alt={`Portfolio item ${index + 1}`}
-                        className="w-full h-full object-cover transition-transform hover:scale-105"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="reviews">
-                <h2 className="text-xl font-semibold mb-4">Customer Reviews</h2>
-                {/* Mock reviews - in a real app, these would come from an API */}
-                <div className="space-y-6">
-                  <div className="border-b pb-4">
-                    <div className="flex items-center mb-2">
-                      <div className="flex mr-2">
-                        {renderStars(5)}
-                      </div>
-                      <span className="font-medium">Maria Santos</span>
-                    </div>
-                    <p className="text-gray-700">
-                      "We hired {vendor.name} for our wedding and the service was excellent! 
-                      Very professional and the quality exceeded our expectations."
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">January 15, 2025</p>
+    <>
+      <div className="bg-gray-100 pt-8 pb-16">
+        <div className="container mx-auto px-4">
+          {/* Vendor Header */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+            <div className="md:flex">
+              <div className="md:w-1/3 h-64 md:h-auto">
+                <img 
+                  src={vendor.portfolio[0]} 
+                  alt={vendor.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 md:w-2/3">
+                <div className="flex justify-between items-start">
+                  <h1 className="text-3xl font-bold mb-2">{vendor.name}</h1>
+                  <div className="flex items-center">
+                    <Star className="h-5 w-5 text-yellow-500 fill-yellow-500 mr-1" />
+                    <span className="font-semibold mr-1">{vendor.rating}</span>
+                    <span className="text-gray-500">({vendor.reviewCount} reviews)</span>
                   </div>
-                  <div className="border-b pb-4">
-                    <div className="flex items-center mb-2">
-                      <div className="flex mr-2">
-                        {renderStars(4)}
-                      </div>
-                      <span className="font-medium">John Reyes</span>
-                    </div>
-                    <p className="text-gray-700">
-                      "Great service for our corporate event. The team was punctual and professional. 
-                      Would definitely recommend their services."
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">March 3, 2025</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center mb-2">
-                      <div className="flex mr-2">
-                        {renderStars(5)}
-                      </div>
-                      <span className="font-medium">Anna Garcia</span>
-                    </div>
-                    <p className="text-gray-700">
-                      "Amazing experience working with {vendor.name}! They were very accommodating with 
-                      our special requests and delivered outstanding results."
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">February 20, 2025</p>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="about">
-                <h2 className="text-xl font-semibold mb-4">About {vendor.name}</h2>
-                <div className="space-y-4">
-                  <p className="text-gray-700">
-                    {vendor.description} With {vendor.yearsInBusiness} years of experience in the industry, 
-                    we've built a reputation for reliability, quality, and exceptional customer service.
-                  </p>
-                  
-                  <div>
-                    <h3 className="font-medium mb-2">Operating Hours</h3>
-                    <p className="text-gray-700">
-                      Available days: {vendor.availableDays.join(', ')}
-                    </p>
-                    <p className="text-gray-700">
-                      Hours: 8:00 AM - 7:00 PM
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium mb-2">Service Areas</h3>
-                    <p className="text-gray-700">
-                      We provide services throughout Davao del Norte, including Davao City, 
-                      Tagum City, and surrounding areas.
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-          
-          {/* Sidebar - Booking or Service Info */}
-          <div className="md:w-1/3">
-            {showBookingForm && selectedService ? (
-              <BookingForm 
-                vendorId={vendor.id}
-                vendorName={vendor.name}
-                serviceId={selectedService.id}
-                serviceName={selectedService.name}
-                serviceDescription={selectedService.description}
-                amount={selectedService.price}
-                onSuccess={handleBookingSuccess}
-              />
-            ) : selectedService ? (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Selected Service</h2>
-                <div className="mb-4">
-                  <h3 className="font-medium">{selectedService.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{selectedService.description}</p>
-                  <p className="text-lg font-semibold text-kasadya-purple">₱{selectedService.price.toLocaleString()}</p>
                 </div>
                 
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-center text-gray-700">
-                    <User className="h-4 w-4 mr-2" />
-                    <span>Provided by {vendor.name}</span>
+                <div className="flex items-center text-gray-600 mb-2">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  {vendor.location}
+                </div>
+                
+                <p className="text-gray-700 mb-4">{vendor.description}</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="flex items-center">
+                    <User className="h-5 w-5 text-kasadya-purple mr-2" />
+                    <span>{vendor.yearsInBusiness} years in business</span>
                   </div>
-                  <div className="flex items-center text-gray-700">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    <span>{vendor.location}</span>
+                  <div className="flex items-center">
+                    <Phone className="h-5 w-5 text-kasadya-purple mr-2" />
+                    <span>{vendor.contactNumber}</span>
                   </div>
-                  <div className="flex items-center text-gray-700">
-                    <Clock className="h-4 w-4 mr-2" />
-                    <span>Available on {vendor.availableDays.join(', ')}</span>
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 text-kasadya-purple mr-2" />
+                    <span>Available {vendor.availableDays.length} days/week</span>
                   </div>
                 </div>
                 
                 <Button 
-                  className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
-                  onClick={handleBookNowClick}
+                  className="bg-kasadya-purple hover:bg-kasadya-deep-purple w-full md:w-auto"
+                  onClick={() => setShowBookingForm(true)}
                 >
                   Book Now
                 </Button>
-                
-                <p className="text-xs text-gray-500 text-center mt-2">
-                  Secure your booking today. Easy cancellation up to 48 hours before the event.
-                </p>
               </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Contact {vendor.name}</h2>
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-center text-gray-700">
-                    <Phone className="h-4 w-4 mr-2" />
-                    <span>{vendor.contactNumber}</span>
+            </div>
+          </div>
+          
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Services and Details */}
+            <div className="lg:col-span-2">
+              <Tabs defaultValue="services">
+                <TabsList className="bg-white w-full">
+                  <TabsTrigger value="services">Services</TabsTrigger>
+                  <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+                  <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="services" className="mt-4">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h2 className="text-2xl font-bold mb-4">Available Services</h2>
+                    <div className="space-y-4">
+                      {vendorServices.map((service) => (
+                        <Card 
+                          key={service.id} 
+                          className={`cursor-pointer hover:border-kasadya-purple transition-colors ${
+                            selectedService?.id === service.id ? 'border-kasadya-purple' : ''
+                          }`}
+                          onClick={() => setSelectedService(service)}
+                        >
+                          <CardContent className="p-5">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="text-xl font-bold">{service.name}</h3>
+                                <p className="text-gray-600">{service.description}</p>
+                              </div>
+                              <div className="text-xl font-bold text-kasadya-purple">
+                                ₱{service.price.toLocaleString()}
+                              </div>
+                            </div>
+                            <div className="mt-4">
+                              <Button 
+                                className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                                onClick={() => {
+                                  setSelectedService(service);
+                                  setShowBookingForm(true);
+                                }}
+                              >
+                                Book This Package
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex items-center text-gray-700 break-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <span>{vendor.email}</span>
+                </TabsContent>
+                
+                <TabsContent value="portfolio" className="mt-4">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h2 className="text-2xl font-bold mb-4">Portfolio</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {vendor.portfolio.map((photo: string, index: number) => (
+                        <div key={index} className="aspect-square rounded-lg overflow-hidden">
+                          <img src={photo} alt={`Portfolio item ${index + 1}`} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="reviews" className="mt-4">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
+                    <div className="text-center py-8">
+                      <p className="text-gray-600">Review feature coming soon!</p>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+            
+            {/* Booking Info */}
+            <div>
+              <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+                <h2 className="text-xl font-bold mb-4">Booking Information</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold">Available Days</h3>
+                    <p>{vendor.availableDays.join(', ')}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold">Typical Response Time</h3>
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 text-kasadya-purple mr-2" />
+                      <span>Within 24 hours</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold">Service Area</h3>
+                    <div className="flex items-center">
+                      <MapPin className="h-4 w-4 text-kasadya-purple mr-2" />
+                      <span>Davao del Norte and surrounding areas</span>
+                    </div>
                   </div>
                 </div>
-                <p className="text-gray-700 mb-4">
-                  Please select a service from the list to proceed with booking. If you have any questions,
-                  feel free to contact {vendor.name} directly.
-                </p>
+                
+                <div className="border-t border-gray-200 mt-4 pt-4">
+                  <Button 
+                    className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                    onClick={() => setShowBookingForm(true)}
+                  >
+                    Book This Vendor
+                  </Button>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
-    </Layout>
+      
+      {/* Booking Form */}
+      {showBookingForm && selectedService && (
+        <BookingForm
+          isOpen={showBookingForm}
+          onClose={() => setShowBookingForm(false)}
+          vendor={vendor}
+          service={selectedService}
+        />
+      )}
+    </>
   );
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -12,7 +13,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -121,7 +121,7 @@ const Dashboard = () => {
 
   // Render the dashboard UI
   return (
-    <Layout>
+    <>
       {/* Dashboard Header */}
       <section className="bg-gray-100 py-6 border-b">
         <div className="container mx-auto px-4">
@@ -506,7 +506,7 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-    </Layout>
+    </>
   );
 };
 
