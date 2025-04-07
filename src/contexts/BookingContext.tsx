@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNotifications } from './NotificationContext';
@@ -19,7 +18,7 @@ export interface Booking {
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   notes: string;
   createdAt: string;
-  // Add properties needed by AdminDashboard
+  // Properties needed by AdminDashboard
   name: string;
   email: string;
   roomType: string;
