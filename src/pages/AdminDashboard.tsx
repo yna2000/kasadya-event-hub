@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import {
   Tabs,
   TabsContent,
@@ -66,6 +66,18 @@ const AdminDashboard = () => {
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+
+  // Helper function to safely format dates
+  const safeFormatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+      return isValid(date) ? format(date, 'PP') : 'Invalid date';
+    } catch (error) {
+      console.error('Date formatting error:', error, 'for date:', dateString);
+      return 'Invalid date';
+    }
+  };
 
   useEffect(() => {
     if (!user || !user.isAdmin) {
@@ -807,7 +819,7 @@ const AdminDashboard = () => {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{getIdTypeBadge(user.idType)}</TableCell>
                         <TableCell>{user.idNumber || 'Not provided'}</TableCell>
-                        <TableCell>{format(new Date(user.createdAt), 'PP')}</TableCell>
+                        <TableCell>{user.createdAt ? safeFormatDate(user.createdAt) : 'N/A'}</TableCell>
                         <TableCell>{getVerificationBadge(user.isVerified)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
@@ -906,11 +918,15 @@ const AdminDashboard = () => {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <p className="font-medium">Registered:</p>
-                  <p className="col-span-3">{format(new Date(selectedUser.createdAt), 'PPP')}</p>
+                  <p className="col-span-3">
+                    {selectedUser.createdAt ? safeFormatDate(selectedUser.createdAt) : 'N/A'}
+                  </p>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <p className="font-medium">Last Login:</p>
-                  <p className="col-span-3">{format(new Date(selectedUser.lastLogin), 'PPP')}</p>
+                  <p className="col-span-3">
+                    {selectedUser.lastLogin ? safeFormatDate(selectedUser.lastLogin) : 'N/A'}
+                  </p>
                 </div>
               </div>
               <DialogFooter>
