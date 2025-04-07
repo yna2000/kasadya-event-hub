@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -52,8 +53,8 @@ import {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { bookings, updateBookingStatus, updatePaymentStatus, verifyUser } = useBooking();
+  const { user, verifyUser } = useAuth();
+  const { bookings, updateBookingStatus, updatePaymentStatus } = useBooking();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBookings, setFilteredBookings] = useState(bookings);
   const [userSearchTerm, setUserSearchTerm] = useState('');
@@ -208,7 +209,7 @@ const AdminDashboard = () => {
     </Card>
   );
 
-    const handleVerifyUser = async (userId: string, isVerified: boolean) => {
+  const handleVerifyUser = async (userId: string, isVerified: boolean) => {
     try {
       await verifyUser(userId, isVerified);
       toast({
