@@ -8,7 +8,10 @@ export type UserType = {
   email: string;
   phone?: string;
   address?: string;
-  isAdmin?: boolean; // Added isAdmin field
+  isAdmin?: boolean;
+  idType?: 'national_id' | 'passport' | 'drivers_license';
+  idNumber?: string;
+  isVerified?: boolean;
   createdAt: string;
   lastLogin: string;
 };
@@ -16,9 +19,16 @@ export type UserType = {
 interface AuthContextType {
   user: UserType | null;
   isLoading: boolean;
-  isAuthenticated: boolean; // Added isAuthenticated property
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, phone?: string, address?: string) => Promise<boolean>;
+  register: (
+    name: string, 
+    email: string, 
+    password: string, 
+    role?: string,
+    idType?: string,
+    idNumber?: string
+  ) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -146,8 +156,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     name: string,
     email: string,
     password: string,
-    phone: string = '',
-    address: string = ''
+    role: string = 'customer',
+    idType: string = 'national_id',
+    idNumber: string = ''
   ) => {
     setIsLoading(true);
     try {
@@ -177,8 +188,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         name,
         email,
         password,
-        phone,
-        address,
+        role,
+        idType,
+        idNumber,
+        isVerified: false, // Initially set to false until admin verifies
         isAdmin: false, // Default to non-admin
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString()
@@ -199,13 +212,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       createNotification(
         userWithoutPassword.id,
         "Welcome to Kasadya Marketplace!",
-        `Thank you for registering, ${name}! Start exploring our services and vendors.`,
+        `Thank you for registering, ${name}! Your ID verification is pending admin approval.`,
         'system'
       );
       
       toast({
         title: "Registration successful",
-        description: "Welcome to Kasadya Marketplace!"
+        description: "Welcome to Kasadya Marketplace! Your account is pending ID verification."
       });
       
       setIsLoading(false);
@@ -237,7 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{
       user,
       isLoading,
-      isAuthenticated: !!user, // Add isAuthenticated property
+      isAuthenticated: !!user,
       login,
       register,
       logout
