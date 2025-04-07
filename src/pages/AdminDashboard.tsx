@@ -48,7 +48,7 @@ import {
   ArrowUpDown,
   CheckCheck,
   XCircle,
-  CreditCard
+  CreditCard,
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -64,6 +64,8 @@ const AdminDashboard = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user || !user.isAdmin) {
@@ -94,12 +96,29 @@ const AdminDashboard = () => {
   }, [searchTerm, bookings, statusFilter, paymentFilter]);
 
   useEffect(() => {
-    if (user) {
-      setFilteredUsers([user].filter((u) =>
-        u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(userSearchTerm.toLowerCase())
-      ));
-    }
+    // Fetch all users from localStorage for admin
+    const loadUsers = () => {
+      if (user?.isAdmin) {
+        const storedUsers = localStorage.getItem('users');
+        if (storedUsers) {
+          const allUsers = JSON.parse(storedUsers);
+          
+          // Apply search filter if any
+          const filtered = allUsers.filter((u) => 
+            !userSearchTerm || 
+            u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+            u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+            (u.idNumber && u.idNumber.toLowerCase().includes(userSearchTerm.toLowerCase()))
+          );
+          
+          setFilteredUsers(filtered);
+        }
+      } else {
+        setFilteredUsers([user]);
+      }
+    };
+    
+    loadUsers();
   }, [userSearchTerm, user]);
 
   const handleLogout = () => {
@@ -240,6 +259,35 @@ const AdminDashboard = () => {
           Unverified
         </Badge>
       );
+    }
+  };
+
+  const getIdTypeBadge = (idType: string) => {
+    switch (idType) {
+      case 'national_id':
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+            National ID
+          </Badge>
+        );
+      case 'passport':
+        return (
+          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
+            Passport
+          </Badge>
+        );
+      case 'drivers_license':
+        return (
+          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+            Driver's License
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline">
+            {idType || 'No ID Type'}
+          </Badge>
+        );
     }
   };
 
@@ -728,7 +776,7 @@ const AdminDashboard = () => {
                     <Search className="h-4 w-4 mr-2" />
                     <Input
                       type="search"
-                      placeholder="Search by name or email..."
+                      placeholder="Search by name, email, or ID number..."
                       value={userSearchTerm}
                       onChange={(e) => setUserSearchTerm(e.target.value)}
                     />
@@ -740,9 +788,11 @@ const AdminDashboard = () => {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
+                      <TableHead>ID Type</TableHead>
+                      <TableHead>ID Number</TableHead>
                       <TableHead>Registration Date</TableHead>
-                      <TableHead className="text-right">Verification Status</TableHead>
+                      <TableHead>Verification Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -755,15 +805,23 @@ const AdminDashboard = () => {
                           </div>
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            <Shield className="h-4 w-4 mr-1" />
-                            {user.isAdmin ? 'Admin' : 'User'}
-                          </Badge>
-                        </TableCell>
+                        <TableCell>{getIdTypeBadge(user.idType)}</TableCell>
+                        <TableCell>{user.idNumber || 'Not provided'}</TableCell>
                         <TableCell>{format(new Date(user.createdAt), 'PP')}</TableCell>
+                        <TableCell>{getVerificationBadge(user.isVerified)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsUserDialogOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Details
+                            </Button>
                             {!user.isVerified ? (
                               <Button
                                 size="sm"
@@ -796,6 +854,99 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* User Details Dialog */}
+      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+        <DialogContent>
+          {selectedUser && (
+            <>
+              <DialogHeader>
+                <DialogTitle>User Identification Details</DialogTitle>
+                <DialogDescription>
+                  Verification information for {selectedUser.name}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Name:</p>
+                  <p className="col-span-3">{selectedUser.name}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Email:</p>
+                  <p className="col-span-3">{selectedUser.email}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Phone:</p>
+                  <p className="col-span-3">{selectedUser.phone || 'Not provided'}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Address:</p>
+                  <p className="col-span-3">{selectedUser.address || 'Not provided'}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Role:</p>
+                  <div className="col-span-3">
+                    <Badge variant="secondary">
+                      <Shield className="h-4 w-4 mr-1" />
+                      {selectedUser.isAdmin ? 'Admin' : 'User'}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">ID Type:</p>
+                  <div className="col-span-3">{getIdTypeBadge(selectedUser.idType)}</div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">ID Number:</p>
+                  <p className="col-span-3">{selectedUser.idNumber || 'Not provided'}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Verification:</p>
+                  <div className="col-span-3">{getVerificationBadge(selectedUser.isVerified)}</div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Registered:</p>
+                  <p className="col-span-3">{format(new Date(selectedUser.createdAt), 'PPP')}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Last Login:</p>
+                  <p className="col-span-3">{format(new Date(selectedUser.lastLogin), 'PPP')}</p>
+                </div>
+              </div>
+              <DialogFooter>
+                <div className="flex gap-2">
+                  {!selectedUser.isVerified ? (
+                    <Button
+                      onClick={() => {
+                        handleVerifyUser(selectedUser.id, true);
+                        setIsUserDialogOpen(false);
+                      }}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      Verify User
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => {
+                        handleVerifyUser(selectedUser.id, false);
+                        setIsUserDialogOpen(false);
+                      }}
+                      variant="destructive"
+                    >
+                      <UserX className="h-4 w-4 mr-1" />
+                      Revoke Verification
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
+                    Close
+                  </Button>
+                </div>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
