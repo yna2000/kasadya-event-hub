@@ -73,7 +73,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const createBooking = async (bookingData: Omit<Booking, 'id' | 'status' | 'paymentStatus' | 'createdAt'>) => {
+  const createBooking = async (bookingData: Omit<Booking, 'id' | 'status' | 'paymentStatus' | 'createdAt'>): Promise<Booking> => {
     // Create a new booking
     const newBooking: Booking = {
       ...bookingData,
