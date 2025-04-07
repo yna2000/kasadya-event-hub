@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -85,7 +86,7 @@ const AdminDashboard = () => {
   const getVerificationBadge = (isVerified: boolean) => {
     if (isVerified) {
       return (
-        <Badge variant="success">
+        <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
           <CheckCircle className="h-4 w-4 mr-1" />
           Verified
         </Badge>

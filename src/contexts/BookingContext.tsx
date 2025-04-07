@@ -19,6 +19,13 @@ export interface Booking {
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   notes: string;
   createdAt: string;
+  // Add properties needed by AdminDashboard
+  name: string;
+  email: string;
+  roomType: string;
+  checkInDate: string;
+  checkOutDate: string;
+  totalPrice: number;
 }
 
 interface BookingContextType {
@@ -30,6 +37,7 @@ interface BookingContextType {
   updatePaymentStatus: (bookingId: string, paymentStatus: Booking['paymentStatus']) => void;
   cancelBooking: (bookingId: string) => void;
   processPayment: (bookingId: string, amount: number) => Promise<boolean>;
+  fetchBookings: () => void;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -49,10 +57,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
 
   // Load bookings from local storage on startup
   useEffect(() => {
-    const storedBookings = localStorage.getItem('bookings');
-    if (storedBookings) {
-      setBookings(JSON.parse(storedBookings));
-    }
+    fetchBookings();
   }, []);
 
   // Save bookings to local storage when they change
@@ -61,6 +66,13 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('bookings', JSON.stringify(bookings));
     }
   }, [bookings]);
+
+  const fetchBookings = () => {
+    const storedBookings = localStorage.getItem('bookings');
+    if (storedBookings) {
+      setBookings(JSON.parse(storedBookings));
+    }
+  };
 
   const createBooking = async (bookingData: Omit<Booking, 'id' | 'status' | 'paymentStatus' | 'createdAt'>) => {
     // Create a new booking
@@ -236,6 +248,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       updatePaymentStatus,
       cancelBooking,
       processPayment,
+      fetchBookings,
     }}>
       {children}
     </BookingContext.Provider>

@@ -26,10 +26,11 @@ interface AuthContextType {
     email: string, 
     password: string, 
     role?: string,
-    idType?: string,
+    idType?: 'national_id' | 'passport' | 'drivers_license',
     idNumber?: string
   ) => Promise<boolean>;
   logout: () => void;
+  verifyUser: (userId: string, isVerified: boolean) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,7 +44,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserType>(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is already logged in
@@ -157,7 +158,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string,
     password: string,
     role: string = 'customer',
-    idType: string = 'national_id',
+    idType: 'national_id' | 'passport' | 'drivers_license' = 'national_id',
     idNumber: string = ''
   ) => {
     setIsLoading(true);
@@ -236,6 +237,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const verifyUser = async (userId: string, isVerified: boolean): Promise<boolean> => {
+    try {
+      // In a real app, this would be an API call
+      // For demo, we'll use local storage and simulate a network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Get users from localStorage
+      const storedUsers = localStorage.getItem('users') || '[]';
+      const users = JSON.parse(storedUsers);
+      
+      // Find and update the user
+      const userIndex = users.findIndex((u: any) => u.id === userId);
+      
+      if (userIndex === -1) {
+        toast({
+          title: "Verification failed",
+          description: "User not found.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Update user verification status
+      users[userIndex].isVerified = isVerified;
+      
+      // Save back to localStorage
+      localStorage.setItem('users', JSON.stringify(users));
+      
+      // If this is the currently logged-in user, update their session
+      if (user && user.id === userId) {
+        const updatedUser = { ...user, isVerified };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('User verification error:', error);
+      return false;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -253,7 +296,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAuthenticated: !!user,
       login,
       register,
-      logout
+      logout,
+      verifyUser
     }}>
       {children}
     </AuthContext.Provider>
