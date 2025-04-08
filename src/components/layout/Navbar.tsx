@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Search, User, Bell } from 'lucide-react';
@@ -35,7 +36,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/'); // Redirect to the Index page after logout
+    navigate('/');
   };
 
   return (
