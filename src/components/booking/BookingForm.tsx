@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -119,7 +120,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const handleOtpVerified = async () => {
     if (!bookingData || !user) return;
     
-    // Add all required fields to match the Booking interface
     const success = await createBooking({
       userId: user.id,
       vendorId,
@@ -131,13 +131,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
       time: bookingData.time,
       amount,
       notes: bookingData.notes || '',
-      // Add the missing properties required by the Booking interface
-      name: user.name,
-      email: user.email,
-      roomType: serviceName, // Using serviceName as roomType
-      checkInDate: bookingData.date.toISOString().split('T')[0],
-      checkOutDate: bookingData.date.toISOString().split('T')[0], // Same as checkInDate for non-hotel services
-      totalPrice: amount,
     });
 
     if (success) {
