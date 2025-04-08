@@ -12,7 +12,7 @@ const Index = () => {
           <div className="md:w-1/2 bg-kasadya-brown p-8 text-white flex flex-col justify-center">
             <div className="mb-6 flex items-center">
               <img 
-                src="/lovable-uploads/73a04d9b-63ea-42f1-9c3c-5a47a988cf0a.png" 
+                src="/lovable-uploads/5cbbe934-29df-4dba-823a-f08a2c799ad6.png" 
                 alt="Kasadya Logo" 
                 className="h-16 w-16 mr-3 animate-bounce-subtle" 
               />
@@ -46,8 +46,8 @@ const Index = () => {
               Browse our marketplace for event services including catering, photography, venues, decorations, and more.
             </p>
             <div className="flex flex-col space-y-3">
-              <Button asChild className="bg-kasadya-teal hover:bg-kasadya-deep-teal group">
-                <Link to="/home" className="flex items-center">
+              <Button asChild className="bg-kasadya-teal hover:bg-kasadya-deep-teal group text-white font-medium">
+                <Link to="/services" className="flex items-center">
                   Explore Services
                   <ArrowRight className="ml-2 h-4 w-4 transform transition-transform group-hover:translate-x-1" />
                 </Link>
