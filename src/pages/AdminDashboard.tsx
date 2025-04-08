@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isValid, parseISO } from 'date-fns';
@@ -58,7 +57,7 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBookings, setFilteredBookings] = useState(bookings);
   const [userSearchTerm, setUserSearchTerm] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState([user]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]); // Initialize with empty array instead of [user]
   const [selectedTab, setSelectedTab] = useState('overview');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -118,15 +117,17 @@ const AdminDashboard = () => {
           // Apply search filter if any
           const filtered = allUsers.filter((u) => 
             !userSearchTerm || 
-            u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-            u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+            u.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+            u.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
             (u.idNumber && u.idNumber.toLowerCase().includes(userSearchTerm.toLowerCase()))
           );
           
           setFilteredUsers(filtered);
         }
+      } else if (user) {
+        setFilteredUsers([user]); // Only set user if it's not null
       } else {
-        setFilteredUsers([user]);
+        setFilteredUsers([]); // Empty array if no user
       }
     };
     
@@ -839,132 +840,4 @@ const AdminDashboard = () => {
                                 size="sm"
                                 variant="outline"
                                 className="border-green-500 text-green-500 hover:bg-green-50"
-                                onClick={() => handleVerifyUser(user.id, true)}
-                              >
-                                <UserCheck className="h-4 w-4 mr-1" />
-                                Verify
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-red-500 text-red-500 hover:bg-red-50"
-                                onClick={() => handleVerifyUser(user.id, false)}
-                              >
-                                <UserX className="h-4 w-4 mr-1" />
-                                Revoke
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* User Details Dialog */}
-      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-        <DialogContent>
-          {selectedUser && (
-            <>
-              <DialogHeader>
-                <DialogTitle>User Identification Details</DialogTitle>
-                <DialogDescription>
-                  Verification information for {selectedUser.name}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Name:</p>
-                  <p className="col-span-3">{selectedUser.name}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Email:</p>
-                  <p className="col-span-3">{selectedUser.email}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Phone:</p>
-                  <p className="col-span-3">{selectedUser.phone || 'Not provided'}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Address:</p>
-                  <p className="col-span-3">{selectedUser.address || 'Not provided'}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Role:</p>
-                  <div className="col-span-3">
-                    <Badge variant="secondary">
-                      <Shield className="h-4 w-4 mr-1" />
-                      {selectedUser.isAdmin ? 'Admin' : 'User'}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">ID Type:</p>
-                  <div className="col-span-3">{getIdTypeBadge(selectedUser.idType)}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">ID Number:</p>
-                  <p className="col-span-3">{selectedUser.idNumber || 'Not provided'}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Verification:</p>
-                  <div className="col-span-3">{getVerificationBadge(selectedUser.isVerified)}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Registered:</p>
-                  <p className="col-span-3">
-                    {selectedUser.createdAt ? safeFormatDate(selectedUser.createdAt) : 'N/A'}
-                  </p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Last Login:</p>
-                  <p className="col-span-3">
-                    {selectedUser.lastLogin ? safeFormatDate(selectedUser.lastLogin) : 'N/A'}
-                  </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <div className="flex gap-2">
-                  {!selectedUser.isVerified ? (
-                    <Button
-                      onClick={() => {
-                        handleVerifyUser(selectedUser.id, true);
-                        setIsUserDialogOpen(false);
-                      }}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <UserCheck className="h-4 w-4 mr-1" />
-                      Verify User
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => {
-                        handleVerifyUser(selectedUser.id, false);
-                        setIsUserDialogOpen(false);
-                      }}
-                      variant="destructive"
-                    >
-                      <UserX className="h-4 w-4 mr-1" />
-                      Revoke Verification
-                    </Button>
-                  )}
-                  <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
-                    Close
-                  </Button>
-                </div>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-};
-
-export default AdminDashboard;
+                                onClick={() => handleVerifyUser(
