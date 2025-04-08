@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isValid, parseISO } from 'date-fns';
@@ -840,4 +841,116 @@ const AdminDashboard = () => {
                                 size="sm"
                                 variant="outline"
                                 className="border-green-500 text-green-500 hover:bg-green-50"
-                                onClick={() => handleVerifyUser(
+                                onClick={() => handleVerifyUser(user.id, true)}
+                              >
+                                <UserCheck className="h-4 w-4 mr-1" />
+                                Verify
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-500 text-red-500 hover:bg-red-50"
+                                onClick={() => handleVerifyUser(user.id, false)}
+                              >
+                                <UserX className="h-4 w-4 mr-1" />
+                                Unverify
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* User Details Dialog */}
+      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+        <DialogContent>
+          {selectedUser && (
+            <>
+              <DialogHeader>
+                <DialogTitle>User Details</DialogTitle>
+                <DialogDescription>
+                  Detailed information about the selected user
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Name:</p>
+                  <p className="col-span-3">{selectedUser.name}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Email:</p>
+                  <p className="col-span-3">{selectedUser.email}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">ID Type:</p>
+                  <div className="col-span-3">{getIdTypeBadge(selectedUser.idType)}</div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">ID Number:</p>
+                  <p className="col-span-3">{selectedUser.idNumber || 'Not provided'}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Registration:</p>
+                  <p className="col-span-3">{selectedUser.createdAt ? safeFormatDate(selectedUser.createdAt) : 'N/A'}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="font-medium">Verification:</p>
+                  <div className="col-span-3">{getVerificationBadge(selectedUser.isVerified)}</div>
+                </div>
+                {selectedUser.phoneNumber && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <p className="font-medium">Phone:</p>
+                    <p className="col-span-3">{selectedUser.phoneNumber}</p>
+                  </div>
+                )}
+                {selectedUser.address && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <p className="font-medium">Address:</p>
+                    <p className="col-span-3">{selectedUser.address}</p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                {!selectedUser.isVerified ? (
+                  <Button
+                    variant="outline"
+                    className="border-green-500 text-green-500 hover:bg-green-50"
+                    onClick={() => {
+                      handleVerifyUser(selectedUser.id, true);
+                      setIsUserDialogOpen(false);
+                    }}
+                  >
+                    <UserCheck className="h-4 w-4 mr-1" />
+                    Verify User
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="border-red-500 text-red-500 hover:bg-red-50"
+                    onClick={() => {
+                      handleVerifyUser(selectedUser.id, false);
+                      setIsUserDialogOpen(false);
+                    }}
+                  >
+                    <UserX className="h-4 w-4 mr-1" />
+                    Unverify User
+                  </Button>
+                )}
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default AdminDashboard;
