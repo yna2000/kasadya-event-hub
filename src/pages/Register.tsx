@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import {
   Select,
@@ -22,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { AlertCircle, Shield } from 'lucide-react';
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -31,6 +33,10 @@ const registerSchema = z.object({
   role: z.enum(['customer', 'vendor'], { 
     required_error: 'Please select a role' 
   }),
+  idType: z.enum(['national_id', 'passport', 'drivers_license'], {
+    required_error: 'Please select an ID type'
+  }),
+  idNumber: z.string().min(5, { message: 'ID number must be at least 5 characters' }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -51,6 +57,8 @@ const Register = () => {
       password: '',
       confirmPassword: '',
       role: 'customer',
+      idType: 'national_id',
+      idNumber: '',
     },
   });
 
@@ -62,7 +70,9 @@ const Register = () => {
         data.name, 
         data.email, 
         data.password, 
-        data.role
+        data.role,
+        data.idType,
+        data.idNumber
       );
       
       if (success) {
@@ -141,6 +151,59 @@ const Register = () => {
                     <FormControl>
                       <Input type="password" placeholder="********" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="bg-blue-50 p-4 rounded-md mb-2">
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-blue-700">ID Verification Required</h3>
+                    <p className="text-xs text-blue-600 mt-1">
+                      For security purposes, we require ID verification for all users.
+                      Your information is encrypted and stored securely.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="idType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ID Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select ID type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="national_id">National ID</SelectItem>
+                        <SelectItem value="passport">Passport</SelectItem>
+                        <SelectItem value="drivers_license">Driver's License</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="idNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ID Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your ID number" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      This will be verified by our security team.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

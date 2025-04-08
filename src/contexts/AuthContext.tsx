@@ -8,7 +8,10 @@ export type UserType = {
   email: string;
   phone?: string;
   address?: string;
-  isAdmin?: boolean; // Added isAdmin field
+  isAdmin?: boolean;
+  idType?: 'national_id' | 'passport' | 'drivers_license';
+  idNumber?: string;
+  isVerified?: boolean;
   createdAt: string;
   lastLogin: string;
 };
@@ -16,10 +19,18 @@ export type UserType = {
 interface AuthContextType {
   user: UserType | null;
   isLoading: boolean;
-  isAuthenticated: boolean; // Added isAuthenticated property
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, phone?: string, address?: string) => Promise<boolean>;
+  register: (
+    name: string, 
+    email: string, 
+    password: string, 
+    role?: string,
+    idType?: 'national_id' | 'passport' | 'drivers_license',
+    idNumber?: string
+  ) => Promise<boolean>;
   logout: () => void;
+  verifyUser: (userId: string, isVerified: boolean) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,7 +44,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserType>(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is already logged in
@@ -146,8 +157,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     name: string,
     email: string,
     password: string,
-    phone: string = '',
-    address: string = ''
+    role: string = 'customer',
+    idType: 'national_id' | 'passport' | 'drivers_license' = 'national_id',
+    idNumber: string = ''
   ) => {
     setIsLoading(true);
     try {
@@ -177,8 +189,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         name,
         email,
         password,
-        phone,
-        address,
+        role,
+        idType,
+        idNumber,
+        isVerified: false, // Initially set to false until admin verifies
         isAdmin: false, // Default to non-admin
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString()
@@ -199,13 +213,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       createNotification(
         userWithoutPassword.id,
         "Welcome to Kasadya Marketplace!",
-        `Thank you for registering, ${name}! Start exploring our services and vendors.`,
+        `Thank you for registering, ${name}! Your ID verification is pending admin approval.`,
         'system'
       );
       
       toast({
         title: "Registration successful",
-        description: "Welcome to Kasadya Marketplace!"
+        description: "Welcome to Kasadya Marketplace! Your account is pending ID verification."
       });
       
       setIsLoading(false);
@@ -219,6 +233,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       setIsLoading(false);
+      return false;
+    }
+  };
+
+  const verifyUser = async (userId: string, isVerified: boolean): Promise<boolean> => {
+    try {
+      // In a real app, this would be an API call
+      // For demo, we'll use local storage and simulate a network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Get users from localStorage
+      const storedUsers = localStorage.getItem('users') || '[]';
+      const users = JSON.parse(storedUsers);
+      
+      // Find and update the user
+      const userIndex = users.findIndex((u: any) => u.id === userId);
+      
+      if (userIndex === -1) {
+        toast({
+          title: "Verification failed",
+          description: "User not found.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Update user verification status
+      users[userIndex].isVerified = isVerified;
+      
+      // Save back to localStorage
+      localStorage.setItem('users', JSON.stringify(users));
+      
+      // If this is the currently logged-in user, update their session
+      if (user && user.id === userId) {
+        const updatedUser = { ...user, isVerified };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('User verification error:', error);
       return false;
     }
   };
@@ -237,10 +293,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{
       user,
       isLoading,
-      isAuthenticated: !!user, // Add isAuthenticated property
+      isAuthenticated: !!user,
       login,
       register,
-      logout
+      logout,
+      verifyUser
     }}>
       {children}
     </AuthContext.Provider>

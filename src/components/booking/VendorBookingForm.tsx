@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
@@ -107,7 +106,7 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
     // In a real app, the amount would be calculated based on the service
     const amount = Math.floor(Math.random() * 500) + 100;
 
-    // Create the booking with properties that match the Booking interface
+    // Create the booking with all required properties
     const success = await createBooking({
       vendorId: vendor.id,
       vendorName: vendor.name,
@@ -119,6 +118,13 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
       time: bookingData.time,
       amount: amount,
       notes: bookingData.notes || '',
+      // Add the missing properties required by the Booking interface
+      name: user.name,
+      email: user.email,
+      roomType: service, // Using service as roomType
+      checkInDate: bookingData.date.toISOString().split('T')[0],
+      checkOutDate: bookingData.date.toISOString().split('T')[0], // Same as checkInDate for non-hotel services
+      totalPrice: amount,
     });
 
     if (success) {
