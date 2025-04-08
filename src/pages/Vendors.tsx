@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Search, Star, MapPin, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -234,7 +233,7 @@ const Vendors = () => {
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-xl font-bold">{vendor.name}</h3>
-                      <Badge variant="outline" className="bg-kasadya-teal text-white">Featured</Badge>
+                      <Badge variant="outline" className="bg-kasadya-purple text-white">Featured</Badge>
                     </div>
                     <p className="text-sm text-gray-500 mb-2">{vendor.category}</p>
                     <p className="text-gray-600 mb-4">{vendor.description}</p>
@@ -252,7 +251,7 @@ const Vendors = () => {
                     </div>
                     
                     <Button 
-                      className="w-full mt-4 bg-kasadya-teal hover:bg-kasadya-deep-teal text-white font-medium"
+                      className="w-full mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple"
                       onClick={() => handleContactVendor(vendor)}
                     >
                       Book Now
@@ -301,7 +300,7 @@ const Vendors = () => {
                     </div>
                     
                     <Button 
-                      className="w-full mt-4 bg-kasadya-teal hover:bg-kasadya-deep-teal text-white font-medium"
+                      className="w-full mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple"
                       onClick={() => handleContactVendor(vendor)}
                     >
                       Book Now
@@ -339,7 +338,7 @@ const Vendors = () => {
           <Button 
             size="lg" 
             variant="outline" 
-            className="bg-white text-kasadya-teal hover:bg-gray-100 font-medium"
+            className="bg-white text-kasadya-purple hover:bg-gray-100"
             onClick={() => window.location.href = '/register'}
           >
             Become a Vendor

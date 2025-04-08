@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, isValid, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import {
   Tabs,
   TabsContent,
@@ -14,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
-import { toast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -24,931 +22,363 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Filter,
-  Search,
-  Shield,
-  User,
-  UserCheck,
-  UserX,
-  Eye,
-  ArrowUpDown,
-  CheckCheck,
-  XCircle,
-  CreditCard,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, DollarSign, Filter, Search } from 'lucide-react';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, verifyUser } = useAuth();
+  const { user } = useAuth();
   const { bookings, updateBookingStatus, updatePaymentStatus } = useBooking();
+  
+  const [activeTab, setActiveTab] = useState('bookings');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBookings, setFilteredBookings] = useState(bookings);
-  const [userSearchTerm, setUserSearchTerm] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]); // Initialize with empty array instead of [user]
-  const [selectedTab, setSelectedTab] = useState('overview');
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [paymentFilter, setPaymentFilter] = useState('all');
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
-
-  // Helper function to safely format dates
-  const safeFormatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
-      return isValid(date) ? format(date, 'PP') : 'Invalid date';
-    } catch (error) {
-      console.error('Date formatting error:', error, 'for date:', dateString);
-      return 'Invalid date';
-    }
-  };
-
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
+  
   useEffect(() => {
-    if (!user || !user.isAdmin) {
+    // Check if user is admin, if not redirect
+    if (!user) {
       navigate('/login');
+      return;
+    }
+    
+    if (!user.isAdmin) {
+      navigate('/dashboard');
+      return;
     }
   }, [user, navigate]);
 
   useEffect(() => {
-    let filtered = bookings;
+    let result = [...bookings];
     
+    // Apply search
     if (searchTerm) {
-      filtered = filtered.filter((booking) =>
-        booking.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.serviceName?.toLowerCase().includes(searchTerm.toLowerCase())
+      const term = searchTerm.toLowerCase();
+      result = result.filter(booking => 
+        booking.vendorName.toLowerCase().includes(term) ||
+        booking.serviceName.toLowerCase().includes(term) ||
+        booking.id.toLowerCase().includes(term)
       );
     }
     
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((booking) => booking.status === statusFilter);
+    // Apply booking status filter
+    if (filterStatus !== 'all') {
+      result = result.filter(booking => booking.status === filterStatus);
     }
     
-    if (paymentFilter !== 'all') {
-      filtered = filtered.filter((booking) => booking.paymentStatus === paymentFilter);
+    // Apply payment status filter
+    if (filterPaymentStatus !== 'all') {
+      result = result.filter(booking => booking.paymentStatus === filterPaymentStatus);
     }
     
-    setFilteredBookings(filtered);
-  }, [searchTerm, bookings, statusFilter, paymentFilter]);
+    setFilteredBookings(result);
+  }, [bookings, searchTerm, filterStatus, filterPaymentStatus]);
 
-  useEffect(() => {
-    // Fetch all users from localStorage for admin
-    const loadUsers = () => {
-      if (user?.isAdmin) {
-        const storedUsers = localStorage.getItem('users');
-        if (storedUsers) {
-          const allUsers = JSON.parse(storedUsers);
-          
-          // Apply search filter if any
-          const filtered = allUsers.filter((u) => 
-            !userSearchTerm || 
-            u.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-            u.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-            (u.idNumber && u.idNumber.toLowerCase().includes(userSearchTerm.toLowerCase()))
-          );
-          
-          setFilteredUsers(filtered);
-        }
-      } else if (user) {
-        setFilteredUsers([user]); // Only set user if it's not null
-      } else {
-        setFilteredUsers([]); // Empty array if no user
-      }
-    };
-    
-    loadUsers();
-  }, [userSearchTerm, user]);
-
-  const handleLogout = () => {
-    navigate('/login');
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-            <Clock className="h-4 w-4 mr-1" />
-            Pending
-          </Badge>
-        );
-      case 'confirmed':
-        return (
-          <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-            <CheckCircle className="h-4 w-4 mr-1" />
-            Confirmed
-          </Badge>
-        );
-      case 'cancelled':
-        return (
-          <Badge variant="destructive">
-            <XCircle className="h-4 w-4 mr-1" />
-            Cancelled
-          </Badge>
-        );
-      case 'completed':
-        return (
-          <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-            <CheckCheck className="h-4 w-4 mr-1" />
-            Completed
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline">
-            {status}
-          </Badge>
-        );
-    }
-  };
-
-  const getPaymentBadge = (paymentStatus) => {
-    switch (paymentStatus) {
-      case 'unpaid':
-        return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-            <AlertCircle className="h-4 w-4 mr-1" />
-            Unpaid
-          </Badge>
-        );
-      case 'partial':
-        return (
-          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
-            <CreditCard className="h-4 w-4 mr-1" />
-            Partial
-          </Badge>
-        );
-      case 'paid':
-        return (
-          <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200">
-            <DollarSign className="h-4 w-4 mr-1" />
-            Paid
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline">
-            {paymentStatus}
-          </Badge>
-        );
-    }
-  };
-
-  const handleUpdateStatus = (bookingId, newStatus) => {
+  const handleBookingStatusChange = (bookingId: string, newStatus: 'pending' | 'confirmed' | 'cancelled' | 'completed') => {
     updateBookingStatus(bookingId, newStatus);
-    setIsDialogOpen(false);
-    toast({
-      title: "Booking Status Updated",
-      description: `Booking status has been updated to ${newStatus}.`
-    });
   };
 
-  const handleUpdatePaymentStatus = (bookingId, newPaymentStatus) => {
-    updatePaymentStatus(bookingId, newPaymentStatus);
-    setIsDialogOpen(false);
-    toast({
-      title: "Payment Status Updated",
-      description: `Payment status has been updated to ${newPaymentStatus}.`
-    });
+  const handlePaymentStatusChange = (bookingId: string, newStatus: 'unpaid' | 'partial' | 'paid') => {
+    updatePaymentStatus(bookingId, newStatus);
   };
 
-  const BookingStatsCard = ({ title, count, icon, color }) => (
-    <Card>
-      <CardContent className="flex items-center p-6">
-        <div className={`p-2 rounded-full ${color} mr-4`}>
-          {icon}
-        </div>
-        <div>
-          <p className="text-sm font-medium">{title}</p>
-          <h3 className="text-2xl font-bold">{count}</h3>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const handleVerifyUser = async (userId: string, isVerified: boolean) => {
-    try {
-      await verifyUser(userId, isVerified);
-      toast({
-        title: "User Verification",
-        description: `User ${isVerified ? 'verified' : 'unverified'} successfully.`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to verify user.",
-      });
-    }
-  };
-
-  const getVerificationBadge = (isVerified: boolean) => {
-    if (isVerified) {
-      return (
-        <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-          <CheckCircle className="h-4 w-4 mr-1" />
-          Verified
-        </Badge>
-      );
-    } else {
-      return (
-        <Badge variant="destructive">
-          <AlertCircle className="h-4 w-4 mr-1" />
-          Unverified
-        </Badge>
-      );
-    }
-  };
-
-  const getIdTypeBadge = (idType: string) => {
-    switch (idType) {
-      case 'national_id':
-        return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-            National ID
-          </Badge>
-        );
-      case 'passport':
-        return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
-            Passport
-          </Badge>
-        );
-      case 'drivers_license':
-        return (
-          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
-            Driver's License
-          </Badge>
-        );
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <Badge className="bg-green-500 text-white">Confirmed</Badge>;
+      case 'pending':
+        return <Badge variant="secondary">Pending</Badge>;
+      case 'cancelled':
+        return <Badge variant="destructive">Cancelled</Badge>;
+      case 'completed':
+        return <Badge className="bg-gray-500 text-white">Completed</Badge>;
+      case 'unpaid':
+        return <Badge variant="outline" className="border-red-500 text-red-500">Unpaid</Badge>;
+      case 'partial':
+        return <Badge variant="outline" className="border-yellow-500 text-yellow-500">Partial</Badge>;
+      case 'paid':
+        return <Badge variant="outline" className="border-green-500 text-green-500">Paid</Badge>;
       default:
-        return (
-          <Badge variant="outline">
-            {idType || 'No ID Type'}
-          </Badge>
-        );
+        return <Badge>{status}</Badge>;
     }
   };
 
   return (
     <>
-      <div className="container mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
-        <Button onClick={handleLogout} className="mb-4">Logout</Button>
-
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="overview" onClick={() => setSelectedTab('overview')}>Overview</TabsTrigger>
-            <TabsTrigger value="bookings" onClick={() => setSelectedTab('bookings')}>Bookings</TabsTrigger>
-            <TabsTrigger value="users" onClick={() => setSelectedTab('users')}>User Verification</TabsTrigger>
+      <section className="bg-gray-100 py-6 border-b">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+              <p className="text-gray-600">
+                Manage bookings, payments, and user accounts
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <div className="container mx-auto py-8 px-4">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full max-w-3xl mx-auto mb-8">
+            <TabsTrigger value="bookings" className="data-[state=active]:bg-kasadya-purple data-[state=active]:text-white">
+              All Bookings
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="data-[state=active]:bg-kasadya-purple data-[state=active]:text-white">
+              Payment Management
+            </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="overview">
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Booking Overview</CardTitle>
-                <CardDescription>Quick summary of all bookings in the system</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                  <BookingStatsCard 
-                    title="Total Bookings" 
-                    count={bookings.length} 
-                    icon={<Clock className="h-6 w-6 text-white" />} 
-                    color="bg-blue-500" 
-                  />
-                  <BookingStatsCard 
-                    title="Pending Approval" 
-                    count={bookings.filter(b => b.status === 'pending').length} 
-                    icon={<AlertCircle className="h-6 w-6 text-white" />} 
-                    color="bg-yellow-500" 
-                  />
-                  <BookingStatsCard 
-                    title="Confirmed" 
-                    count={bookings.filter(b => b.status === 'confirmed').length} 
-                    icon={<CheckCircle className="h-6 w-6 text-white" />} 
-                    color="bg-green-500" 
-                  />
-                  <BookingStatsCard 
-                    title="Completed" 
-                    count={bookings.filter(b => b.status === 'completed').length} 
-                    icon={<CheckCheck className="h-6 w-6 text-white" />} 
-                    color="bg-purple-500" 
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <BookingStatsCard 
-                    title="Unpaid" 
-                    count={bookings.filter(b => b.paymentStatus === 'unpaid').length} 
-                    icon={<AlertCircle className="h-6 w-6 text-white" />} 
-                    color="bg-red-500" 
-                  />
-                  <BookingStatsCard 
-                    title="Partial Payment" 
-                    count={bookings.filter(b => b.paymentStatus === 'partial').length} 
-                    icon={<CreditCard className="h-6 w-6 text-white" />} 
-                    color="bg-amber-500" 
-                  />
-                  <BookingStatsCard 
-                    title="Fully Paid" 
-                    count={bookings.filter(b => b.paymentStatus === 'paid').length} 
-                    icon={<DollarSign className="h-6 w-6 text-white" />} 
-                    color="bg-emerald-500" 
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
+          
+          <TabsContent value="bookings" className="max-w-full mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Bookings</CardTitle>
-                <CardDescription>The most recent bookings in the system</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Payment</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bookings.slice(0, 5).map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{booking.name || 'Client'}</span>
-                            <span className="text-xs text-muted-foreground">{booking.email || ''}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{booking.serviceName}</TableCell>
-                        <TableCell>{booking.date} {booking.time}</TableCell>
-                        <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                        <TableCell>{getPaymentBadge(booking.paymentStatus)}</TableCell>
-                        <TableCell className="text-right">
-                          <Dialog open={isDialogOpen && selectedBooking?.id === booking.id} onOpenChange={(open) => {
-                            setIsDialogOpen(open);
-                            if (!open) setSelectedBooking(null);
-                          }}>
-                            <DialogTrigger asChild>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => {
-                                  setSelectedBooking(booking);
-                                  setIsDialogOpen(true);
-                                }}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Manage
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              {selectedBooking && (
-                                <>
-                                  <DialogHeader>
-                                    <DialogTitle>Manage Booking</DialogTitle>
-                                    <DialogDescription>
-                                      Update the status and payment information for this booking
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Service:</p>
-                                      <p className="col-span-3">{selectedBooking.serviceName}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Client:</p>
-                                      <p className="col-span-3">{selectedBooking.name || 'Client'}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Date/Time:</p>
-                                      <p className="col-span-3">{selectedBooking.date} {selectedBooking.time}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Amount:</p>
-                                      <p className="col-span-3">₱{selectedBooking.amount?.toLocaleString() || selectedBooking.totalPrice?.toLocaleString()}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Current Status:</p>
-                                      <div className="col-span-3">{getStatusBadge(selectedBooking.status)}</div>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Payment Status:</p>
-                                      <div className="col-span-3">{getPaymentBadge(selectedBooking.paymentStatus)}</div>
-                                    </div>
-                                  </div>
-                                  <DialogFooter className="flex-col sm:flex-row gap-2">
-                                    <div className="flex flex-col w-full gap-2">
-                                      <p className="text-sm font-medium mb-1">Update Booking Status:</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
-                                          onClick={() => handleUpdateStatus(selectedBooking.id, 'pending')}
-                                        >
-                                          <Clock className="h-4 w-4 mr-1" />
-                                          Pending
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-green-500 text-green-700 hover:bg-green-50"
-                                          onClick={() => handleUpdateStatus(selectedBooking.id, 'confirmed')}
-                                        >
-                                          <CheckCircle className="h-4 w-4 mr-1" />
-                                          Confirmed
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-blue-500 text-blue-700 hover:bg-blue-50"
-                                          onClick={() => handleUpdateStatus(selectedBooking.id, 'completed')}
-                                        >
-                                          <CheckCheck className="h-4 w-4 mr-1" />
-                                          Completed
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-red-500 text-red-700 hover:bg-red-50"
-                                          onClick={() => handleUpdateStatus(selectedBooking.id, 'cancelled')}
-                                        >
-                                          <XCircle className="h-4 w-4 mr-1" />
-                                          Cancelled
-                                        </Button>
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex flex-col w-full gap-2 mt-4">
-                                      <p className="text-sm font-medium mb-1">Update Payment Status:</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-red-500 text-red-700 hover:bg-red-50"
-                                          onClick={() => handleUpdatePaymentStatus(selectedBooking.id, 'unpaid')}
-                                        >
-                                          <AlertCircle className="h-4 w-4 mr-1" />
-                                          Unpaid
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-amber-500 text-amber-700 hover:bg-amber-50"
-                                          onClick={() => handleUpdatePaymentStatus(selectedBooking.id, 'partial')}
-                                        >
-                                          <CreditCard className="h-4 w-4 mr-1" />
-                                          Partial
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
-                                          onClick={() => handleUpdatePaymentStatus(selectedBooking.id, 'paid')}
-                                        >
-                                          <DollarSign className="h-4 w-4 mr-1" />
-                                          Paid
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </DialogFooter>
-                                </>
-                              )}
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="bookings">
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>Bookings Management</CardTitle>
-                <CardDescription>Manage and view all bookings.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
-                  <div className="flex items-center w-full md:w-auto">
-                    <Search className="h-4 w-4 mr-2" />
+                <CardTitle className="text-2xl font-bold">Booking Management</CardTitle>
+                <CardDescription>
+                  View and manage all bookings across the platform
+                </CardDescription>
+                
+                <div className="flex flex-col md:flex-row gap-4 mt-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                      type="search"
-                      placeholder="Search by name, email, or service..."
+                      placeholder="Search bookings..."
+                      className="pl-8"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full md:w-auto"
                     />
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    <select 
-                      className="border rounded-md px-3 py-2 text-sm"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
+                  
+                  <div className="flex gap-2">
+                    <select
+                      className="px-3 py-2 rounded-md border border-input bg-background"
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
                     >
                       <option value="all">All Statuses</option>
                       <option value="pending">Pending</option>
                       <option value="confirmed">Confirmed</option>
-                      <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
+                      <option value="completed">Completed</option>
                     </select>
-                    <select 
-                      className="border rounded-md px-3 py-2 text-sm"
-                      value={paymentFilter}
-                      onChange={(e) => setPaymentFilter(e.target.value)}
+                    
+                    <select
+                      className="px-3 py-2 rounded-md border border-input bg-background"
+                      value={filterPaymentStatus}
+                      onChange={(e) => setFilterPaymentStatus(e.target.value)}
                     >
                       <option value="all">All Payments</option>
                       <option value="unpaid">Unpaid</option>
                       <option value="partial">Partial</option>
                       <option value="paid">Paid</option>
                     </select>
-                    <Button variant="outline">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
                   </div>
                 </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>
-                        <div className="flex items-center">
-                          Date
-                          <ArrowUpDown className="h-4 w-4 ml-1" />
-                        </div>
-                      </TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>
-                        <div className="flex items-center">
-                          Amount
-                          <ArrowUpDown className="h-4 w-4 ml-1" />
-                        </div>
-                      </TableHead>
-                      <TableHead>Payment</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredBookings.map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{booking.name || 'Client'}</span>
-                            <span className="text-xs text-muted-foreground">{booking.email || ''}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span>{booking.serviceName}</span>
-                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                              {booking.serviceDescription?.substring(0, 50)}{booking.serviceDescription?.length > 50 ? '...' : ''}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span>{booking.date}</span>
-                            <span className="text-xs text-muted-foreground">{booking.time}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <DollarSign className="h-4 w-4 mr-1" />
-                            {booking.amount?.toLocaleString() || booking.totalPrice?.toLocaleString()}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getPaymentBadge(booking.paymentStatus)}</TableCell>
-                        <TableCell className="text-right">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => {
-                                  setSelectedBooking(booking);
-                                  setIsDialogOpen(true);
-                                }}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Manage
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              {booking && (
-                                <>
-                                  <DialogHeader>
-                                    <DialogTitle>Manage Booking</DialogTitle>
-                                    <DialogDescription>
-                                      Update the status and payment information for this booking
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Service:</p>
-                                      <p className="col-span-3">{booking.serviceName}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Client:</p>
-                                      <p className="col-span-3">{booking.name || 'Client'}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Date/Time:</p>
-                                      <p className="col-span-3">{booking.date} {booking.time}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Amount:</p>
-                                      <p className="col-span-3">₱{booking.amount?.toLocaleString() || booking.totalPrice?.toLocaleString()}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Current Status:</p>
-                                      <div className="col-span-3">{getStatusBadge(booking.status)}</div>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Payment Status:</p>
-                                      <div className="col-span-3">{getPaymentBadge(booking.paymentStatus)}</div>
-                                    </div>
-                                    {booking.notes && (
-                                      <div className="grid grid-cols-4 items-center gap-4">
-                                        <p className="font-medium">Notes:</p>
-                                        <p className="col-span-3">{booking.notes}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <DialogFooter className="flex-col sm:flex-row gap-2">
-                                    <div className="flex flex-col w-full gap-2">
-                                      <p className="text-sm font-medium mb-1">Update Booking Status:</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
-                                          onClick={() => handleUpdateStatus(booking.id, 'pending')}
-                                        >
-                                          <Clock className="h-4 w-4 mr-1" />
-                                          Pending
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-green-500 text-green-700 hover:bg-green-50"
-                                          onClick={() => handleUpdateStatus(booking.id, 'confirmed')}
-                                        >
-                                          <CheckCircle className="h-4 w-4 mr-1" />
-                                          Confirmed
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-blue-500 text-blue-700 hover:bg-blue-50"
-                                          onClick={() => handleUpdateStatus(booking.id, 'completed')}
-                                        >
-                                          <CheckCheck className="h-4 w-4 mr-1" />
-                                          Completed
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-red-500 text-red-700 hover:bg-red-50"
-                                          onClick={() => handleUpdateStatus(booking.id, 'cancelled')}
-                                        >
-                                          <XCircle className="h-4 w-4 mr-1" />
-                                          Cancelled
-                                        </Button>
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex flex-col w-full gap-2 mt-4">
-                                      <p className="text-sm font-medium mb-1">Update Payment Status:</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-red-500 text-red-700 hover:bg-red-50"
-                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'unpaid')}
-                                        >
-                                          <AlertCircle className="h-4 w-4 mr-1" />
-                                          Unpaid
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-amber-500 text-amber-700 hover:bg-amber-50"
-                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'partial')}
-                                        >
-                                          <CreditCard className="h-4 w-4 mr-1" />
-                                          Partial
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
-                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'paid')}
-                                        >
-                                          <DollarSign className="h-4 w-4 mr-1" />
-                                          Paid
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </DialogFooter>
-                                </>
-                              )}
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Booking ID</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Payment</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredBookings.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                            No bookings found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredBookings.map((booking) => (
+                          <TableRow key={booking.id}>
+                            <TableCell className="font-medium">{booking.id.substring(0, 8)}...</TableCell>
+                            <TableCell>{booking.userId.substring(0, 8)}...</TableCell>
+                            <TableCell>
+                              <div className="font-medium">{booking.serviceName}</div>
+                              <div className="text-sm text-muted-foreground">{booking.vendorName}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div>{format(new Date(booking.date), 'PP')}</div>
+                              <div className="text-sm text-muted-foreground">{booking.time}</div>
+                            </TableCell>
+                            <TableCell>₱{booking.amount.toLocaleString()}</TableCell>
+                            <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                            <TableCell>{getStatusBadge(booking.paymentStatus)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <select
+                                  className="px-2 py-1 text-xs rounded border"
+                                  value={booking.status}
+                                  onChange={(e) => handleBookingStatusChange(
+                                    booking.id, 
+                                    e.target.value as 'pending' | 'confirmed' | 'cancelled' | 'completed'
+                                  )}
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="confirmed">Confirm</option>
+                                  <option value="cancelled">Cancel</option>
+                                  <option value="completed">Complete</option>
+                                </select>
+                                
+                                <select
+                                  className="px-2 py-1 text-xs rounded border"
+                                  value={booking.paymentStatus}
+                                  onChange={(e) => handlePaymentStatusChange(
+                                    booking.id,
+                                    e.target.value as 'unpaid' | 'partial' | 'paid'
+                                  )}
+                                >
+                                  <option value="unpaid">Unpaid</option>
+                                  <option value="partial">Partial</option>
+                                  <option value="paid">Paid</option>
+                                </select>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="users">
-            <Card className="w-full">
+          
+          <TabsContent value="payments" className="max-w-full mx-auto">
+            <Card>
               <CardHeader>
-                <CardTitle>User Verification</CardTitle>
-                <CardDescription>Verify user identities to enhance booking security.</CardDescription>
+                <CardTitle className="text-2xl font-bold">Payment Overview</CardTitle>
+                <CardDescription>
+                  Track payment status across all bookings
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <Search className="h-4 w-4 mr-2" />
-                    <Input
-                      type="search"
-                      placeholder="Search by name, email, or ID number..."
-                      value={userSearchTerm}
-                      onChange={(e) => setUserSearchTerm(e.target.value)}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Total Bookings
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{bookings.length}</div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Unpaid
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-baseline">
+                      <div className="text-2xl font-bold text-red-500">
+                        {bookings.filter(b => b.paymentStatus === 'unpaid').length}
+                      </div>
+                      <div className="ml-2 text-sm text-muted-foreground">
+                        ({((bookings.filter(b => b.paymentStatus === 'unpaid').length / bookings.length) * 100).toFixed(0)}%)
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Partially Paid
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-baseline">
+                      <div className="text-2xl font-bold text-yellow-500">
+                        {bookings.filter(b => b.paymentStatus === 'partial').length}
+                      </div>
+                      <div className="ml-2 text-sm text-muted-foreground">
+                        ({((bookings.filter(b => b.paymentStatus === 'partial').length / bookings.length) * 100).toFixed(0)}%)
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Fully Paid
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-baseline">
+                      <div className="text-2xl font-bold text-green-500">
+                        {bookings.filter(b => b.paymentStatus === 'paid').length}
+                      </div>
+                      <div className="ml-2 text-sm text-muted-foreground">
+                        ({((bookings.filter(b => b.paymentStatus === 'paid').length / bookings.length) * 100).toFixed(0)}%)
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>ID Type</TableHead>
-                      <TableHead>ID Number</TableHead>
-                      <TableHead>Registration Date</TableHead>
-                      <TableHead>Verification Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 mr-1" />
-                            {user.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{getIdTypeBadge(user.idType)}</TableCell>
-                        <TableCell>{user.idNumber || 'Not provided'}</TableCell>
-                        <TableCell>{user.createdAt ? safeFormatDate(user.createdAt) : 'N/A'}</TableCell>
-                        <TableCell>{getVerificationBadge(user.isVerified)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setIsUserDialogOpen(true);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Details
-                            </Button>
-                            {!user.isVerified ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-green-500 text-green-500 hover:bg-green-50"
-                                onClick={() => handleVerifyUser(user.id, true)}
-                              >
-                                <UserCheck className="h-4 w-4 mr-1" />
-                                Verify
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-red-500 text-red-500 hover:bg-red-50"
-                                onClick={() => handleVerifyUser(user.id, false)}
-                              >
-                                <UserX className="h-4 w-4 mr-1" />
-                                Unverify
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
+                
+                <div className="rounded-md border">
+                  <Table>
+                    <TableCaption>Recent Payment Activity</TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Booking ID</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Payment Status</TableHead>
+                        <TableHead>Booking Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredBookings.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                            No payment data found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredBookings.slice(0, 10).map((booking) => (
+                          <TableRow key={booking.id}>
+                            <TableCell className="font-medium">{booking.id.substring(0, 8)}...</TableCell>
+                            <TableCell>{booking.userId.substring(0, 8)}...</TableCell>
+                            <TableCell>
+                              {booking.serviceName} ({booking.vendorName})
+                            </TableCell>
+                            <TableCell>₱{booking.amount.toLocaleString()}</TableCell>
+                            <TableCell>{getStatusBadge(booking.paymentStatus)}</TableCell>
+                            <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                            <TableCell className="text-right">
+                              <select
+                                className="px-2 py-1 text-xs rounded border"
+                                value={booking.paymentStatus}
+                                onChange={(e) => handlePaymentStatusChange(
+                                  booking.id,
+                                  e.target.value as 'unpaid' | 'partial' | 'paid'
+                                )}
+                              >
+                                <option value="unpaid">Unpaid</option>
+                                <option value="partial">Partial</option>
+                                <option value="paid">Paid</option>
+                              </select>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-      
-      {/* User Details Dialog */}
-      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-        <DialogContent>
-          {selectedUser && (
-            <>
-              <DialogHeader>
-                <DialogTitle>User Details</DialogTitle>
-                <DialogDescription>
-                  Detailed information about the selected user
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Name:</p>
-                  <p className="col-span-3">{selectedUser.name}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Email:</p>
-                  <p className="col-span-3">{selectedUser.email}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">ID Type:</p>
-                  <div className="col-span-3">{getIdTypeBadge(selectedUser.idType)}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">ID Number:</p>
-                  <p className="col-span-3">{selectedUser.idNumber || 'Not provided'}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Registration:</p>
-                  <p className="col-span-3">{selectedUser.createdAt ? safeFormatDate(selectedUser.createdAt) : 'N/A'}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Verification:</p>
-                  <div className="col-span-3">{getVerificationBadge(selectedUser.isVerified)}</div>
-                </div>
-                {selectedUser.phoneNumber && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <p className="font-medium">Phone:</p>
-                    <p className="col-span-3">{selectedUser.phoneNumber}</p>
-                  </div>
-                )}
-                {selectedUser.address && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <p className="font-medium">Address:</p>
-                    <p className="col-span-3">{selectedUser.address}</p>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                {!selectedUser.isVerified ? (
-                  <Button
-                    variant="outline"
-                    className="border-green-500 text-green-500 hover:bg-green-50"
-                    onClick={() => {
-                      handleVerifyUser(selectedUser.id, true);
-                      setIsUserDialogOpen(false);
-                    }}
-                  >
-                    <UserCheck className="h-4 w-4 mr-1" />
-                    Verify User
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="border-red-500 text-red-500 hover:bg-red-50"
-                    onClick={() => {
-                      handleVerifyUser(selectedUser.id, false);
-                      setIsUserDialogOpen(false);
-                    }}
-                  >
-                    <UserX className="h-4 w-4 mr-1" />
-                    Unverify User
-                  </Button>
-                )}
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

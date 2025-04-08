@@ -2,6 +2,7 @@
 import { Heart, Star, Users, Shield, Sparkles, MessageCircle } from 'lucide-react';
 
 const About = () => {
+  // Core values data
   const coreValues = [
     {
       icon: <Heart className="h-10 w-10 text-kasadya-purple" />,

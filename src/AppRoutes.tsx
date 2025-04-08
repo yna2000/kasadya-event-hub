@@ -14,14 +14,12 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import VendorServicePage from "./pages/VendorServicePage";
 import OtpVerification from "./pages/OtpVerification";
-import Index from "./pages/Index";
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Index />} />
-        <Route path="/home" element={<Home />} />
+        <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />
         <Route path="/vendors" element={<Vendors />} />
