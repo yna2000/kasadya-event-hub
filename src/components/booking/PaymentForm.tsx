@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,7 +58,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const onSubmit = async (data: PaymentFormData) => {
     setIsProcessing(true);
     try {
-      const success = await processPayment(bookingId, data.amount);
+      const success = await processPayment(bookingId, data.amount, 'cash');
       
       if (success) {
         if (onSuccess) {
@@ -93,6 +92,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   };
 
   return (
+    
     <Card>
       <CardHeader>
         <CardTitle>Payment Details</CardTitle>

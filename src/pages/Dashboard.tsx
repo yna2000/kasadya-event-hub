@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -42,6 +41,7 @@ const Dashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   
   const [editProfile, setEditProfile] = useState(false);
   const [userProfile, setUserProfile] = useState({
@@ -78,7 +78,7 @@ const Dashboard = () => {
       return;
     }
 
-    const success = await processPayment(bookingId, amount);
+    const success = await processPayment(bookingId, amount, paymentMethod);
     if (success) {
       setShowPaymentForm(false);
       setPaymentAmount('');

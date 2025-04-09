@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bank, CreditCard, Payment } from 'lucide-react';
+import { CreditCard, BadgeDollarSign, Ban, Wallet } from 'lucide-react';
 
 interface PaymentMethodSelectionProps {
   selectedMethod: string;
@@ -22,7 +22,7 @@ const PaymentMethodSelection = ({ selectedMethod, onMethodChange }: PaymentMetho
             <RadioGroupItem value="gcash" id="gcash" className="sr-only" />
             <Label htmlFor="gcash" className="flex items-center gap-2 cursor-pointer">
               <div className={`p-2 rounded-full ${selectedMethod === 'gcash' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                <Payment className="h-5 w-5 text-blue-500" />
+                <Wallet className="h-5 w-5 text-blue-500" />
               </div>
               <div className="flex-1">
                 <div className="font-medium">GCash</div>
@@ -62,7 +62,7 @@ const PaymentMethodSelection = ({ selectedMethod, onMethodChange }: PaymentMetho
             <RadioGroupItem value="bank" id="bank" className="sr-only" />
             <Label htmlFor="bank" className="flex items-center gap-2 cursor-pointer">
               <div className={`p-2 rounded-full ${selectedMethod === 'bank' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                <Bank className="h-5 w-5 text-indigo-500" />
+                <BadgeDollarSign className="h-5 w-5 text-indigo-500" />
               </div>
               <div className="flex-1">
                 <div className="font-medium">Bank Transfer</div>
@@ -82,7 +82,7 @@ const PaymentMethodSelection = ({ selectedMethod, onMethodChange }: PaymentMetho
             <RadioGroupItem value="cash" id="cash" className="sr-only" />
             <Label htmlFor="cash" className="flex items-center gap-2 cursor-pointer">
               <div className={`p-2 rounded-full ${selectedMethod === 'cash' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                <Payment className="h-5 w-5 text-gray-500" />
+                <Wallet className="h-5 w-5 text-gray-500" />
               </div>
               <div className="flex-1">
                 <div className="font-medium">Cash</div>
