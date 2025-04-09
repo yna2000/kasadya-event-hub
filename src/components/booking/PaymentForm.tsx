@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +16,7 @@ import {
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBooking } from '@/contexts/BookingContext';
 import { toast } from '@/hooks/use-toast';
+import PaymentMethodSelection from './PaymentMethodSelection';
 
 interface PaymentFormProps {
   bookingId: string;
@@ -43,6 +45,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 }) => {
   const { processPayment } = useBooking();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'gcash' | 'maya' | 'bank' | 'cash'>('cash');
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
@@ -58,7 +61,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const onSubmit = async (data: PaymentFormData) => {
     setIsProcessing(true);
     try {
-      const success = await processPayment(bookingId, data.amount, 'cash');
+      const success = await processPayment(bookingId, data.amount, paymentMethod);
       
       if (success) {
         if (onSuccess) {
@@ -102,6 +105,13 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           <p className="font-medium">{serviceName}</p>
           <p className="text-sm text-gray-600">Provided by {vendorName}</p>
           <p className="text-lg font-semibold text-kasadya-purple mt-2">Total: ₱{totalAmount.toLocaleString()}</p>
+        </div>
+        
+        <div className="mb-6">
+          <PaymentMethodSelection 
+            selectedMethod={paymentMethod}
+            onMethodChange={(method) => setPaymentMethod(method as 'gcash' | 'maya' | 'bank' | 'cash')}
+          />
         </div>
         
         <Form {...form}>
@@ -232,7 +242,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                 className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
                 disabled={isProcessing}
               >
-                {isProcessing ? 'Processing Payment...' : 'Pay Now'}
+                {isProcessing ? 'Processing Payment...' : `Pay Now with ${paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}`}
               </Button>
               
               <p className="text-xs text-gray-500 text-center">

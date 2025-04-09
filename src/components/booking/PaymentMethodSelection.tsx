@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
-import { CreditCard, BadgeDollarSign, Ban, Wallet } from 'lucide-react';
+import { CreditCard, DollarSign, Building, Wallet } from 'lucide-react';
 
 interface PaymentMethodSelectionProps {
   selectedMethod: string;
@@ -62,7 +62,7 @@ const PaymentMethodSelection = ({ selectedMethod, onMethodChange }: PaymentMetho
             <RadioGroupItem value="bank" id="bank" className="sr-only" />
             <Label htmlFor="bank" className="flex items-center gap-2 cursor-pointer">
               <div className={`p-2 rounded-full ${selectedMethod === 'bank' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                <BadgeDollarSign className="h-5 w-5 text-indigo-500" />
+                <Building className="h-5 w-5 text-indigo-500" />
               </div>
               <div className="flex-1">
                 <div className="font-medium">Bank Transfer</div>
@@ -82,7 +82,7 @@ const PaymentMethodSelection = ({ selectedMethod, onMethodChange }: PaymentMetho
             <RadioGroupItem value="cash" id="cash" className="sr-only" />
             <Label htmlFor="cash" className="flex items-center gap-2 cursor-pointer">
               <div className={`p-2 rounded-full ${selectedMethod === 'cash' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                <Wallet className="h-5 w-5 text-gray-500" />
+                <DollarSign className="h-5 w-5 text-gray-500" />
               </div>
               <div className="flex-1">
                 <div className="font-medium">Cash</div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isValid, parseISO } from 'date-fns';
@@ -49,6 +48,8 @@ import {
   CheckCheck,
   XCircle,
   CreditCard,
+  Wallet,
+  Building,
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -300,6 +301,46 @@ const AdminDashboard = () => {
         return (
           <Badge variant="outline">
             {idType || 'No ID Type'}
+          </Badge>
+        );
+    }
+  };
+
+  const getPaymentMethodBadge = (paymentMethod?: string) => {
+    switch (paymentMethod) {
+      case 'gcash':
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+            <Wallet className="h-4 w-4 mr-1" />
+            GCash
+          </Badge>
+        );
+      case 'maya':
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+            <CreditCard className="h-4 w-4 mr-1" />
+            Maya
+          </Badge>
+        );
+      case 'bank':
+        return (
+          <Badge variant="outline" className="bg-indigo-100 text-indigo-800 border-indigo-200">
+            <Building className="h-4 w-4 mr-1" />
+            Bank Transfer
+          </Badge>
+        );
+      case 'cash':
+        return (
+          <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+            <DollarSign className="h-4 w-4 mr-1" />
+            Cash
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
+            <AlertCircle className="h-4 w-4 mr-1" />
+            Not Specified
           </Badge>
         );
     }
@@ -606,6 +647,7 @@ const AdminDashboard = () => {
                         </div>
                       </TableHead>
                       <TableHead>Payment</TableHead>
+                      <TableHead>Method</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -640,6 +682,7 @@ const AdminDashboard = () => {
                           </div>
                         </TableCell>
                         <TableCell>{getPaymentBadge(booking.paymentStatus)}</TableCell>
+                        <TableCell>{getPaymentMethodBadge(booking.paymentMethod)}</TableCell>
                         <TableCell className="text-right">
                           <Dialog>
                             <DialogTrigger asChild>
@@ -798,159 +841,4 @@ const AdminDashboard = () => {
                 </div>
 
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>ID Type</TableHead>
-                      <TableHead>ID Number</TableHead>
-                      <TableHead>Registration Date</TableHead>
-                      <TableHead>Verification Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 mr-1" />
-                            {user.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{getIdTypeBadge(user.idType)}</TableCell>
-                        <TableCell>{user.idNumber || 'Not provided'}</TableCell>
-                        <TableCell>{user.createdAt ? safeFormatDate(user.createdAt) : 'N/A'}</TableCell>
-                        <TableCell>{getVerificationBadge(user.isVerified)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setIsUserDialogOpen(true);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Details
-                            </Button>
-                            {!user.isVerified ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-green-500 text-green-500 hover:bg-green-50"
-                                onClick={() => handleVerifyUser(user.id, true)}
-                              >
-                                <UserCheck className="h-4 w-4 mr-1" />
-                                Verify
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-red-500 text-red-500 hover:bg-red-50"
-                                onClick={() => handleVerifyUser(user.id, false)}
-                              >
-                                <UserX className="h-4 w-4 mr-1" />
-                                Unverify
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-      
-      {/* User Details Dialog */}
-      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-        <DialogContent>
-          {selectedUser && (
-            <>
-              <DialogHeader>
-                <DialogTitle>User Details</DialogTitle>
-                <DialogDescription>
-                  Detailed information about the selected user
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Name:</p>
-                  <p className="col-span-3">{selectedUser.name}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Email:</p>
-                  <p className="col-span-3">{selectedUser.email}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">ID Type:</p>
-                  <div className="col-span-3">{getIdTypeBadge(selectedUser.idType)}</div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">ID Number:</p>
-                  <p className="col-span-3">{selectedUser.idNumber || 'Not provided'}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Registration:</p>
-                  <p className="col-span-3">{selectedUser.createdAt ? safeFormatDate(selectedUser.createdAt) : 'N/A'}</p>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <p className="font-medium">Verification:</p>
-                  <div className="col-span-3">{getVerificationBadge(selectedUser.isVerified)}</div>
-                </div>
-                {selectedUser.phoneNumber && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <p className="font-medium">Phone:</p>
-                    <p className="col-span-3">{selectedUser.phoneNumber}</p>
-                  </div>
-                )}
-                {selectedUser.address && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <p className="font-medium">Address:</p>
-                    <p className="col-span-3">{selectedUser.address}</p>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                {!selectedUser.isVerified ? (
-                  <Button
-                    variant="outline"
-                    className="border-green-500 text-green-500 hover:bg-green-50"
-                    onClick={() => {
-                      handleVerifyUser(selectedUser.id, true);
-                      setIsUserDialogOpen(false);
-                    }}
-                  >
-                    <UserCheck className="h-4 w-4 mr-1" />
-                    Verify User
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="border-red-500 text-red-500 hover:bg-red-50"
-                    onClick={() => {
-                      handleVerifyUser(selectedUser.id, false);
-                      setIsUserDialogOpen(false);
-                    }}
-                  >
-                    <UserX className="h-4 w-4 mr-1" />
-                    Unverify User
-                  </Button>
-                )}
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-};
-
-export default AdminDashboard;
+                  <TableHeader
