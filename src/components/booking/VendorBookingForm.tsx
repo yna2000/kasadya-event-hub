@@ -25,14 +25,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Shield, Info } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import BookingOtpVerification from './BookingOtpVerification';
-import { Checkbox } from '@/components/ui/checkbox';
-import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
 
 const bookingSchema = z.object({
   date: z.date({
@@ -40,9 +38,6 @@ const bookingSchema = z.object({
   }),
   time: z.string().min(1, { message: 'Please select a time' }),
   notes: z.string().optional(),
-  agreeToTerms: z.boolean().refine(val => val === true, {
-    message: 'You must agree to the terms and conditions',
-  }),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
@@ -67,14 +62,12 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
   const { createBooking } = useBooking();
   const { addNotification } = useNotifications();
   const [showOtpVerification, setShowOtpVerification] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
   const [bookingData, setBookingData] = useState<BookingFormData | null>(null);
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       notes: '',
-      agreeToTerms: false,
     },
   });
 
@@ -149,159 +142,108 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
     setShowOtpVerification(false);
   };
 
-  const openTermsModal = () => {
-    setShowTermsModal(true);
-  };
-
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[500px]">
-          {!showOtpVerification ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>Book {vendor?.name}</DialogTitle>
-                <DialogDescription>
-                  Fill out the form below to request a booking for {service}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="date"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={`w-full pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""}`}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 z-50" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                              disabled={(date) => date < new Date()}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Time</FormLabel>
-                        <FormControl>
-                          <Input type="time" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Special Requests (Optional)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Any special requirements or notes for the vendor" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="agreeToTerms"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm font-medium leading-none">
-                            I agree to the{" "}
-                            <Button 
-                              variant="link" 
-                              className="p-0 h-auto text-blue-500 hover:text-blue-700"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                openTermsModal();
-                              }}
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        {!showOtpVerification ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Book {vendor?.name}</DialogTitle>
+              <DialogDescription>
+                Fill out the form below to request a booking for {service}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={`w-full pl-3 text-left font-normal ${!field.value ? "text-muted-foreground" : ""}`}
                             >
-                              terms and conditions
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
-                          </FormLabel>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                            disabled={(date) => date < new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-md">
-                    <Shield size={16} className="text-kasadya-purple" />
-                    <span>Your booking will be secured with OTP verification</span>
-                  </div>
+                <FormField
+                  control={form.control}
+                  name="time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={onClose} className="mr-2">
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="bg-kasadya-purple hover:bg-kasadya-deep-purple">
-                      Continue
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </>
-          ) : (
-            <BookingOtpVerification 
-              onVerified={handleOtpVerified} 
-              onCancel={handleCancelOtp}
-              email={user?.email}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Special Requests (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Any special requirements or notes for the vendor" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-      <TermsAndConditionsModal
-        isOpen={showTermsModal}
-        onClose={() => setShowTermsModal(false)}
-        onAccept={() => {
-          form.setValue('agreeToTerms', true);
-          setShowTermsModal(false);
-        }}
-      />
-    </>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={onClose} className="mr-2">
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-kasadya-purple hover:bg-kasadya-deep-purple">
+                    Continue
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </>
+        ) : (
+          <BookingOtpVerification 
+            onVerified={handleOtpVerified} 
+            onCancel={handleCancelOtp}
+            email={user?.email}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 

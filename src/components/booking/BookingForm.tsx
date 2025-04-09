@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon, Shield } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBooking } from '@/contexts/BookingContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,9 +31,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
 import BookingOtpVerification from './BookingOtpVerification';
-import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
 
 interface BookingFormProps {
   vendorId: string;
@@ -51,9 +49,6 @@ const bookingSchema = z.object({
   }),
   time: z.string().min(1, { message: "Please select a time" }),
   notes: z.string().optional(),
-  agreeToTerms: z.boolean().refine(val => val === true, {
-    message: 'You must agree to the terms and conditions',
-  }),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
@@ -72,14 +67,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOtpVerification, setShowOtpVerification] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
   const [bookingData, setBookingData] = useState<BookingFormData | null>(null);
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       notes: '',
-      agreeToTerms: false,
     }
   });
 
@@ -147,10 +140,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setShowOtpVerification(false);
   };
 
-  const openTermsModal = () => {
-    setShowTermsModal(true);
-  };
-
   // Generate time slot options
   const timeSlots = [];
   for (let hour = 8; hour <= 18; hour++) {
@@ -199,7 +188,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-50" align="start">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
@@ -257,42 +246,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="agreeToTerms"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="text-sm font-medium leading-none">
-                      I agree to the{" "}
-                      <Button 
-                        variant="link" 
-                        className="p-0 h-auto text-blue-500 hover:text-blue-700"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          openTermsModal();
-                        }}
-                      >
-                        terms and conditions
-                      </Button>
-                    </FormLabel>
-                    <FormMessage />
-                  </div>
-                </FormItem>
-              )}
-            />
-
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-md">
-              <Shield size={16} className="text-kasadya-purple" />
-              <span>Your booking will be secured with OTP verification</span>
-            </div>
-            
             <Button 
               type="submit" 
               className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
@@ -300,6 +253,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
             >
               {isSubmitting ? 'Processing...' : 'Continue to Verification'}
             </Button>
+            
+            <p className="text-xs text-gray-500 text-center mt-2">
+              By booking this service, you agree to our Terms and Conditions.
+            </p>
           </form>
         </Form>
       </div>
@@ -314,16 +271,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
           />
         </DialogContent>
       </Dialog>
-
-      {/* Terms and Conditions Modal */}
-      <TermsAndConditionsModal
-        isOpen={showTermsModal}
-        onClose={() => setShowTermsModal(false)}
-        onAccept={() => {
-          form.setValue('agreeToTerms', true);
-          setShowTermsModal(false);
-        }}
-      />
     </>
   );
 };
