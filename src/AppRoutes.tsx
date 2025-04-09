@@ -14,6 +14,8 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import VendorServicePage from "./pages/VendorServicePage";
 import OtpVerification from "./pages/OtpVerification";
+import BookingCalendar from "./pages/BookingCalendar";
+import AdminBookingCalendar from "./pages/AdminBookingCalendar";
 
 const AppRoutes = () => {
   return (
@@ -31,6 +33,8 @@ const AppRoutes = () => {
         <Route path="/verify-otp" element={<OtpVerification />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/booking-calendar" element={<BookingCalendar />} />
+        <Route path="/admin/booking-calendar" element={<AdminBookingCalendar />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Route>
