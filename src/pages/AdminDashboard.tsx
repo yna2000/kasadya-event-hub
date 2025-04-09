@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isValid, parseISO } from 'date-fns';
@@ -841,4 +842,113 @@ const AdminDashboard = () => {
                 </div>
 
                 <Table>
-                  <TableHeader
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>ID Type</TableHead>
+                      <TableHead>ID Number</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="font-medium">{user.name}</div>
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.idType && getIdTypeBadge(user.idType)}</TableCell>
+                        <TableCell>{user.idNumber || 'Not provided'}</TableCell>
+                        <TableCell>{getVerificationBadge(user.isVerified)}</TableCell>
+                        <TableCell className="text-right">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setIsUserDialogOpen(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>User Details</DialogTitle>
+                                <DialogDescription>
+                                  View and manage user verification
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <p className="font-medium">Name:</p>
+                                  <p className="col-span-3">{user.name}</p>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <p className="font-medium">Email:</p>
+                                  <p className="col-span-3">{user.email}</p>
+                                </div>
+                                {user.phone && (
+                                  <div className="grid grid-cols-4 items-center gap-4">
+                                    <p className="font-medium">Phone:</p>
+                                    <p className="col-span-3">{user.phone}</p>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <p className="font-medium">ID Type:</p>
+                                  <div className="col-span-3">
+                                    {user.idType ? getIdTypeBadge(user.idType) : 'Not provided'}
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <p className="font-medium">ID Number:</p>
+                                  <p className="col-span-3">{user.idNumber || 'Not provided'}</p>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <p className="font-medium">Verification:</p>
+                                  <div className="col-span-3">{getVerificationBadge(user.isVerified)}</div>
+                                </div>
+                              </div>
+                              <DialogFooter className="flex gap-2">
+                                {!user.isVerified ? (
+                                  <Button 
+                                    variant="outline" 
+                                    className="border-green-500 text-green-700 hover:bg-green-50"
+                                    onClick={() => handleVerifyUser(user.id, true)}
+                                  >
+                                    <UserCheck className="h-4 w-4 mr-1" />
+                                    Verify User
+                                  </Button>
+                                ) : (
+                                  <Button 
+                                    variant="outline" 
+                                    className="border-red-500 text-red-700 hover:bg-red-50"
+                                    onClick={() => handleVerifyUser(user.id, false)}
+                                  >
+                                    <UserX className="h-4 w-4 mr-1" />
+                                    Remove Verification
+                                  </Button>
+                                )}
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
+  );
+};
+
+export default AdminDashboard;
