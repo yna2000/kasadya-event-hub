@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from '@/hooks/use-toast';
 
@@ -9,6 +8,7 @@ export type UserType = {
   phone?: string;
   address?: string;
   isAdmin?: boolean;
+  isVendor?: boolean;
   idType?: 'national_id' | 'passport' | 'drivers_license';
   idNumber?: string;
   isVerified?: boolean;
@@ -106,6 +106,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Create a user object without the password
           const { password: _, ...userWithoutPassword } = user;
           
+          // Ensure isVendor property exists (for backward compatibility with existing users)
+          if (userWithoutPassword.isVendor === undefined) {
+            userWithoutPassword.isVendor = userWithoutPassword.role === 'vendor';
+          }
+          
           // Update last login
           userWithoutPassword.lastLogin = new Date().toISOString();
           
@@ -194,6 +199,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         idNumber,
         isVerified: false, // Initially set to false until admin verifies
         isAdmin: false, // Default to non-admin
+        isVendor: role === 'vendor', // Set isVendor based on role
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString()
       };

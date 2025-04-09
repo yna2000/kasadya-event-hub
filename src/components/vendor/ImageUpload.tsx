@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Gallery, ImagePlus, Trash2, Loader2 } from 'lucide-react';
+import { ImagePlus, Trash2, Loader2, Images } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ImageUploadProps {
@@ -133,7 +133,7 @@ export function ImageUpload({ value, onChange, maxImages = 5 }: ImageUploadProps
       {value.length === 0 && !isUploading && (
         <div className="border border-dashed border-gray-300 rounded-md p-8 bg-gray-50">
           <div className="flex flex-col items-center gap-2 text-center">
-            <Gallery className="h-12 w-12 text-gray-400" />
+            <Images className="h-12 w-12 text-gray-400" />
             <h3 className="text-lg font-medium text-gray-900">No images uploaded</h3>
             <p className="text-sm text-gray-500">
               Upload high-quality images to showcase your services
