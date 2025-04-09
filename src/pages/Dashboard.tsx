@@ -30,6 +30,7 @@ import {
   Bookmark,
   Clock
 } from 'lucide-react';
+import PaymentMethodSelection from '@/components/booking/PaymentMethodSelection';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ const Dashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'gcash' | 'maya' | 'bank' | 'cash'>('cash');
   
   const [editProfile, setEditProfile] = useState(false);
   const [userProfile, setUserProfile] = useState({
@@ -487,7 +488,13 @@ const Dashboard = () => {
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
               />
-              <div className="items-center px-4 py-3">
+              <div className="mt-4">
+                <PaymentMethodSelection
+                  selectedMethod={paymentMethod}
+                  onMethodChange={(method) => setPaymentMethod(method as 'gcash' | 'maya' | 'bank' | 'cash')}
+                />
+              </div>
+              <div className="items-center px-4 py-3 mt-4">
                 <Button
                   variant="outline"
                   className="px-4 py-2 rounded text-gray-500 hover:bg-gray-100"
