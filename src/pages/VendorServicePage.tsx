@@ -5,33 +5,9 @@ import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, MapPin, Phone, Star, User } from 'lucide-react';
+import { Calendar, Clock, MapPin, Phone, Star, User, Package } from 'lucide-react';
 
 // Mock data - in a real app this would come from an API
-const services = [
-  {
-    id: 'service-1',
-    name: 'Basic Photography Package',
-    description: 'Professional photography coverage for your event. Includes 100 edited photos, 1 photographer, and 4 hours of coverage.',
-    price: 15000,
-    category: 'photography',
-  },
-  {
-    id: 'service-2',
-    name: 'Premium Photography Package',
-    description: 'Comprehensive photography coverage with 2 photographers, 8 hours of coverage, 300 edited photos, and a photo album.',
-    price: 25000,
-    category: 'photography',
-  },
-  {
-    id: 'service-3',
-    name: 'Basic Catering Package',
-    description: 'Catering service for up to 50 guests. Includes appetizers, main course, and dessert.',
-    price: 20000,
-    category: 'catering',
-  },
-];
-
 const vendors = [
   {
     id: 'vendor-1',
@@ -85,12 +61,21 @@ const VendorServicePage = () => {
     if (foundVendor) {
       setVendor(foundVendor);
       
-      // Filter services based on vendor category
-      const matchingServices = services.filter(s => s.category === foundVendor.category);
-      setVendorServices(matchingServices);
-      
-      if (matchingServices.length > 0) {
-        setSelectedService(matchingServices[0]);
+      // Load services from localStorage (in a real app this would be from an API)
+      try {
+        const storedServices = localStorage.getItem('vendorServices');
+        if (storedServices) {
+          const allServices = JSON.parse(storedServices);
+          // Filter services by vendor ID
+          const services = allServices.filter((service: any) => service.vendorId === vendorId);
+          setVendorServices(services);
+          
+          if (services.length > 0) {
+            setSelectedService(services[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading services:', error);
       }
     }
   }, [vendorId]);
@@ -186,49 +171,78 @@ const VendorServicePage = () => {
             <div className="lg:col-span-2">
               <Tabs defaultValue="services">
                 <TabsList className="bg-white w-full">
-                  <TabsTrigger value="services">Services</TabsTrigger>
-                  <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-                  <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                  <TabsTrigger value="services" className="flex items-center">
+                    <Package className="h-4 w-4 mr-2" />
+                    Services
+                  </TabsTrigger>
+                  <TabsTrigger value="portfolio" className="flex items-center">
+                    <Star className="h-4 w-4 mr-2" />
+                    Portfolio
+                  </TabsTrigger>
+                  <TabsTrigger value="reviews" className="flex items-center">
+                    <User className="h-4 w-4 mr-2" />
+                    Reviews
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="services" className="mt-4">
                   <div className="bg-white rounded-lg shadow-md p-6">
                     <h2 className="text-2xl font-bold mb-4">Available Services</h2>
-                    <div className="space-y-4">
-                      {vendorServices.map((service) => (
-                        <Card 
-                          key={service.id} 
-                          className={`cursor-pointer hover:border-kasadya-purple transition-colors ${
-                            selectedService?.id === service.id ? 'border-kasadya-purple' : ''
-                          }`}
-                          onClick={() => setSelectedService(service)}
-                        >
-                          <CardContent className="p-5">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="text-xl font-bold">{service.name}</h3>
-                                <p className="text-gray-600">{service.description}</p>
+                    
+                    {vendorServices.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                        <p className="text-gray-600">This vendor hasn't added any services yet.</p>
+                        <p className="text-gray-500 text-sm mt-2">Check back later or contact them directly for information.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {vendorServices.map((service) => (
+                          <Card 
+                            key={service.id} 
+                            className={`cursor-pointer hover:border-kasadya-purple transition-colors ${
+                              selectedService?.id === service.id ? 'border-kasadya-purple' : ''
+                            }`}
+                            onClick={() => setSelectedService(service)}
+                          >
+                            <CardContent className="p-5">
+                              <div className="md:flex justify-between items-start">
+                                <div className="md:flex gap-4 mb-4 md:mb-0">
+                                  {service.images && service.images.length > 0 && (
+                                    <div className="h-24 w-24 rounded-md overflow-hidden mb-3 md:mb-0 flex-shrink-0">
+                                      <img 
+                                        src={service.images[0]} 
+                                        alt={service.name} 
+                                        className="h-full w-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <h3 className="text-xl font-bold">{service.name}</h3>
+                                    <p className="text-gray-600 line-clamp-2 md:max-w-md mt-1">{service.description}</p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <div className="text-xl font-bold text-kasadya-purple mb-2">
+                                    ₱{service.price.toLocaleString()}
+                                  </div>
+                                  <Button 
+                                    className="w-full md:w-auto bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedService(service);
+                                      handleBookNow();
+                                    }}
+                                  >
+                                    Book This Package
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="text-xl font-bold text-kasadya-purple">
-                                ₱{service.price.toLocaleString()}
-                              </div>
-                            </div>
-                            <div className="mt-4">
-                              <Button 
-                                className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedService(service);
-                                  handleBookNow();
-                                }}
-                              >
-                                Book This Package
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
                 

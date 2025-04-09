@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import VendorDashboard from "./pages/VendorDashboard";
 import VendorServicePage from "./pages/VendorServicePage";
 import OtpVerification from "./pages/OtpVerification";
 import BookingCalendar from "./pages/BookingCalendar";
@@ -32,6 +33,7 @@ const AppRoutes = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/verify-otp" element={<OtpVerification />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/vendor-dashboard" element={<VendorDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/booking-calendar" element={<BookingCalendar />} />
         <Route path="/admin/booking-calendar" element={<AdminBookingCalendar />} />
