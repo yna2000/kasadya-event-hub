@@ -24,7 +24,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ImageUpload } from '@/components/vendor/ImageUpload';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Loader2, Info } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const serviceFormSchema = z.object({
   name: z.string().min(3, {
@@ -53,6 +54,7 @@ interface ServiceUploadFormProps {
 export default function ServiceUploadForm({ onSuccess }: ServiceUploadFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceFormSchema),
@@ -79,7 +81,11 @@ export default function ServiceUploadForm({ onSuccess }: ServiceUploadFormProps)
       const newService = {
         id: `service-${Date.now()}`,
         ...data,
-        vendorId: JSON.parse(localStorage.getItem('user') || '{}').id,
+        vendorId: user?.id || '',
+        vendorName: user?.name || '',
+        businessType: user?.businessType || '',
+        isApproved: false, // Default to not approved
+        adminComments: '',
         createdAt: new Date().toISOString(),
       };
       
@@ -87,8 +93,8 @@ export default function ServiceUploadForm({ onSuccess }: ServiceUploadFormProps)
       localStorage.setItem('vendorServices', JSON.stringify(services));
       
       toast({
-        title: 'Service Created',
-        description: 'Your service has been successfully added.',
+        title: 'Service Submitted for Approval',
+        description: 'Your service has been submitted and is pending admin approval.',
       });
       
       form.reset();
@@ -107,6 +113,19 @@ export default function ServiceUploadForm({ onSuccess }: ServiceUploadFormProps)
 
   return (
     <Form {...form}>
+      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <Info className="h-5 w-5 text-yellow-500 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-yellow-800">Service Approval Process</h3>
+            <p className="text-xs text-yellow-700 mt-1">
+              All submitted services require admin approval before they appear in the marketplace.
+              You will be notified when your service is approved.
+            </p>
+          </div>
+        </div>
+      </div>
+      
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
@@ -228,12 +247,12 @@ export default function ServiceUploadForm({ onSuccess }: ServiceUploadFormProps)
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating Service...
+              Submitting for Approval...
             </>
           ) : (
             <>
               <Camera className="mr-2 h-4 w-4" />
-              Create Service
+              Submit Service for Approval
             </>
           )}
         </Button>

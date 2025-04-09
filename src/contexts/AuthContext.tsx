@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from '@/hooks/use-toast';
 
@@ -9,6 +10,7 @@ export type UserType = {
   address?: string;
   isAdmin?: boolean;
   isVendor?: boolean;
+  businessType?: string; // Added business type field
   idType?: 'national_id' | 'passport' | 'drivers_license';
   idNumber?: string;
   isVerified?: boolean;
@@ -27,7 +29,8 @@ interface AuthContextType {
     password: string, 
     role?: string,
     idType?: 'national_id' | 'passport' | 'drivers_license',
-    idNumber?: string
+    idNumber?: string,
+    businessType?: string
   ) => Promise<boolean>;
   logout: () => void;
   verifyUser: (userId: string, isVerified: boolean) => Promise<boolean>;
@@ -164,7 +167,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string,
     role: string = 'customer',
     idType: 'national_id' | 'passport' | 'drivers_license' = 'national_id',
-    idNumber: string = ''
+    idNumber: string = '',
+    businessType: string = ''
   ) => {
     setIsLoading(true);
     try {
@@ -197,6 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role,
         idType,
         idNumber,
+        businessType: role === 'vendor' ? businessType : undefined, // Only set business type for vendors
         isVerified: false, // Initially set to false until admin verifies
         isAdmin: false, // Default to non-admin
         isVendor: role === 'vendor', // Set isVendor based on role

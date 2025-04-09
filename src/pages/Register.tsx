@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,10 +37,17 @@ const registerSchema = z.object({
     required_error: 'Please select an ID type'
   }),
   idNumber: z.string().min(5, { message: 'ID number must be at least 5 characters' }),
+  businessType: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
-});
+}).refine(
+  (data) => data.role !== 'vendor' || (data.role === 'vendor' && data.businessType && data.businessType.length > 0),
+  {
+    message: "Business type is required for vendors",
+    path: ["businessType"],
+  }
+);
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
@@ -48,6 +55,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { register: registerUser, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [showBusinessType, setShowBusinessType] = useState(false);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -59,8 +67,16 @@ const Register = () => {
       role: 'customer',
       idType: 'national_id',
       idNumber: '',
+      businessType: '',
     },
   });
+
+  // Watch for role changes to toggle business type field
+  const role = form.watch('role');
+
+  useEffect(() => {
+    setShowBusinessType(role === 'vendor');
+  }, [role]);
 
   const onSubmit = async (data: RegisterFormData) => {
     setError(null);
@@ -72,7 +88,8 @@ const Register = () => {
         data.password, 
         data.role,
         data.idType,
-        data.idNumber
+        data.idNumber,
+        data.businessType
       );
       
       if (success) {
@@ -230,6 +247,42 @@ const Register = () => {
                   </FormItem>
                 )}
               />
+
+              {showBusinessType && (
+                <FormField
+                  control={form.control}
+                  name="businessType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your business type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="photography">Photography</SelectItem>
+                          <SelectItem value="videography">Videography</SelectItem>
+                          <SelectItem value="catering">Catering</SelectItem>
+                          <SelectItem value="venue">Venue Rental</SelectItem>
+                          <SelectItem value="entertainment">Entertainment</SelectItem>
+                          <SelectItem value="decoration">Decoration</SelectItem>
+                          <SelectItem value="bakery">Bakery</SelectItem>
+                          <SelectItem value="florist">Florist</SelectItem>
+                          <SelectItem value="transportation">Transportation</SelectItem>
+                          <SelectItem value="beauty">Beauty & Makeup</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        This helps categorize your services in our marketplace.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <Button 
                 type="submit" 
