@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isValid, parseISO } from 'date-fns';
@@ -51,7 +50,14 @@ import {
   CreditCard,
   Wallet,
   Building,
+  Package,
+  ShieldCheck,
+  Trash2,
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -68,6 +74,13 @@ const AdminDashboard = () => {
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  
+  const [pendingServices, setPendingServices] = useState<any[]>([]);
+  const [serviceSearchTerm, setServiceSearchTerm] = useState('');
+  const [filteredServices, setFilteredServices] = useState<any[]>([]);
+  const [selectedService, setSelectedService] = useState(null);
+  const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
+  const [adminComment, setAdminComment] = useState('');
 
   // Helper function to safely format dates
   const safeFormatDate = (dateString) => {
@@ -136,6 +149,42 @@ const AdminDashboard = () => {
     
     loadUsers();
   }, [userSearchTerm, user]);
+
+  // Load pending service posts
+  useEffect(() => {
+    const loadPendingServices = () => {
+      try {
+        const storedServices = localStorage.getItem('vendorServices');
+        if (storedServices) {
+          const allServices = JSON.parse(storedServices);
+          // Get services that are not yet approved
+          const pendingServices = allServices.filter(
+            (service: any) => service.isApproved === false
+          );
+          setPendingServices(pendingServices);
+          setFilteredServices(pendingServices);
+        }
+      } catch (error) {
+        console.error('Error loading pending services:', error);
+      }
+    };
+
+    loadPendingServices();
+  }, []);
+
+  // Update filtered services when search term changes
+  useEffect(() => {
+    if (pendingServices.length > 0) {
+      const filtered = pendingServices.filter(
+        (service) =>
+          !serviceSearchTerm ||
+          service.name.toLowerCase().includes(serviceSearchTerm.toLowerCase()) ||
+          service.vendorName?.toLowerCase().includes(serviceSearchTerm.toLowerCase()) ||
+          service.businessType?.toLowerCase().includes(serviceSearchTerm.toLowerCase())
+      );
+      setFilteredServices(filtered);
+    }
+  }, [serviceSearchTerm, pendingServices]);
 
   const handleLogout = () => {
     navigate('/login');
@@ -228,6 +277,124 @@ const AdminDashboard = () => {
       title: "Payment Status Updated",
       description: `Payment status has been updated to ${newPaymentStatus}.`
     });
+  };
+
+  // Function to approve a service post
+  const handleApproveService = (serviceId: string) => {
+    try {
+      const storedServices = localStorage.getItem('vendorServices');
+      if (storedServices) {
+        const allServices = JSON.parse(storedServices);
+        const updatedServices = allServices.map((service: any) => {
+          if (service.id === serviceId) {
+            return {
+              ...service,
+              isApproved: true,
+              adminComments: adminComment,
+              approvedAt: new Date().toISOString()
+            };
+          }
+          return service;
+        });
+        
+        // Save updated services
+        localStorage.setItem('vendorServices', JSON.stringify(updatedServices));
+        
+        // Update UI
+        const updatedPendingServices = pendingServices.filter(service => service.id !== serviceId);
+        setPendingServices(updatedPendingServices);
+        setFilteredServices(updatedPendingServices);
+        
+        // Create notification for vendor
+        const approvedService = allServices.find((service: any) => service.id === serviceId);
+        if (approvedService) {
+          const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+          const newNotification = {
+            id: `notif-${Math.random().toString(36).substring(2, 9)}`,
+            userId: approvedService.vendorId,
+            title: "Service Approved",
+            message: `Your service "${approvedService.name}" has been approved and is now live.`,
+            type: 'system',
+            read: false,
+            createdAt: new Date().toISOString(),
+          };
+          
+          // Add to notifications array
+          notifications.unshift(newNotification);
+          localStorage.setItem('notifications', JSON.stringify(notifications));
+        }
+        
+        toast({
+          title: "Service Approved",
+          description: "The service has been approved and is now live.",
+        });
+      }
+      
+      setIsServiceDialogOpen(false);
+      setAdminComment('');
+    } catch (error) {
+      console.error('Error approving service:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve the service. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to reject a service post
+  const handleRejectService = (serviceId: string) => {
+    try {
+      const storedServices = localStorage.getItem('vendorServices');
+      if (storedServices) {
+        const allServices = JSON.parse(storedServices);
+        
+        // Find the service to reject
+        const serviceToReject = allServices.find((service: any) => service.id === serviceId);
+        
+        // Remove the service
+        const updatedServices = allServices.filter((service: any) => service.id !== serviceId);
+        localStorage.setItem('vendorServices', JSON.stringify(updatedServices));
+        
+        // Update UI
+        const updatedPendingServices = pendingServices.filter(service => service.id !== serviceId);
+        setPendingServices(updatedPendingServices);
+        setFilteredServices(updatedPendingServices);
+        
+        // Create notification for vendor
+        if (serviceToReject) {
+          const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+          const newNotification = {
+            id: `notif-${Math.random().toString(36).substring(2, 9)}`,
+            userId: serviceToReject.vendorId,
+            title: "Service Rejected",
+            message: `Your service "${serviceToReject.name}" has been rejected. Reason: ${adminComment || 'No reason provided.'}`,
+            type: 'system',
+            read: false,
+            createdAt: new Date().toISOString(),
+          };
+          
+          // Add to notifications array
+          notifications.unshift(newNotification);
+          localStorage.setItem('notifications', JSON.stringify(notifications));
+        }
+        
+        toast({
+          title: "Service Rejected",
+          description: "The service has been rejected and removed from the system.",
+        });
+      }
+      
+      setIsServiceDialogOpen(false);
+      setAdminComment('');
+    } catch (error) {
+      console.error('Error rejecting service:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject the service. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const BookingStatsCard = ({ title, count, icon, color }) => (
@@ -358,6 +525,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="overview" onClick={() => setSelectedTab('overview')}>Overview</TabsTrigger>
             <TabsTrigger value="bookings" onClick={() => setSelectedTab('bookings')}>Bookings</TabsTrigger>
             <TabsTrigger value="users" onClick={() => setSelectedTab('users')}>User Verification</TabsTrigger>
+            <TabsTrigger value="services" onClick={() => setSelectedTab('services')}>Service Verification</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -711,244 +879,4 @@ const AdminDashboard = () => {
                                   <div className="grid gap-4 py-4">
                                     <div className="grid grid-cols-4 items-center gap-4">
                                       <p className="font-medium">Service:</p>
-                                      <p className="col-span-3">{booking.serviceName}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Client:</p>
-                                      <p className="col-span-3">{booking.name || 'Client'}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Date/Time:</p>
-                                      <p className="col-span-3">{booking.date} {booking.time}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Amount:</p>
-                                      <p className="col-span-3">₱{booking.amount?.toLocaleString() || booking.totalPrice?.toLocaleString()}</p>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Current Status:</p>
-                                      <div className="col-span-3">{getStatusBadge(booking.status)}</div>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                      <p className="font-medium">Payment Status:</p>
-                                      <div className="col-span-3">{getPaymentBadge(booking.paymentStatus)}</div>
-                                    </div>
-                                    {booking.notes && (
-                                      <div className="grid grid-cols-4 items-center gap-4">
-                                        <p className="font-medium">Notes:</p>
-                                        <p className="col-span-3">{booking.notes}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <DialogFooter className="flex-col sm:flex-row gap-2">
-                                    <div className="flex flex-col w-full gap-2">
-                                      <p className="text-sm font-medium mb-1">Update Booking Status:</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
-                                          onClick={() => handleUpdateStatus(booking.id, 'pending')}
-                                        >
-                                          <Clock className="h-4 w-4 mr-1" />
-                                          Pending
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-green-500 text-green-700 hover:bg-green-50"
-                                          onClick={() => handleUpdateStatus(booking.id, 'confirmed')}
-                                        >
-                                          <CheckCircle className="h-4 w-4 mr-1" />
-                                          Confirmed
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-blue-500 text-blue-700 hover:bg-blue-50"
-                                          onClick={() => handleUpdateStatus(booking.id, 'completed')}
-                                        >
-                                          <CheckCheck className="h-4 w-4 mr-1" />
-                                          Completed
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-red-500 text-red-700 hover:bg-red-50"
-                                          onClick={() => handleUpdateStatus(booking.id, 'cancelled')}
-                                        >
-                                          <XCircle className="h-4 w-4 mr-1" />
-                                          Cancelled
-                                        </Button>
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex flex-col w-full gap-2 mt-4">
-                                      <p className="text-sm font-medium mb-1">Update Payment Status:</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-red-500 text-red-700 hover:bg-red-50"
-                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'unpaid')}
-                                        >
-                                          <AlertCircle className="h-4 w-4 mr-1" />
-                                          Unpaid
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-amber-500 text-amber-700 hover:bg-amber-50"
-                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'partial')}
-                                        >
-                                          <CreditCard className="h-4 w-4 mr-1" />
-                                          Partial
-                                        </Button>
-                                        <Button 
-                                          variant="outline" 
-                                          className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
-                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'paid')}
-                                        >
-                                          <DollarSign className="h-4 w-4 mr-1" />
-                                          Paid
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </DialogFooter>
-                                </>
-                              )}
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="users">
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle>User Verification</CardTitle>
-                <CardDescription>Verify user identities to enhance booking security.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <Search className="h-4 w-4 mr-2" />
-                    <Input
-                      type="search"
-                      placeholder="Search by name, email, or ID number..."
-                      value={userSearchTerm}
-                      onChange={(e) => setUserSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>ID Type</TableHead>
-                      <TableHead>ID Number</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="font-medium">{user.name}</div>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.idType && getIdTypeBadge(user.idType)}</TableCell>
-                        <TableCell>{user.idNumber || 'Not provided'}</TableCell>
-                        <TableCell>{getVerificationBadge(user.isVerified)}</TableCell>
-                        <TableCell className="text-right">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setIsUserDialogOpen(true);
-                                }}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                View
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>User Details</DialogTitle>
-                                <DialogDescription>
-                                  View and manage user verification
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="grid gap-4 py-4">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                  <p className="font-medium">Name:</p>
-                                  <p className="col-span-3">{user.name}</p>
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                  <p className="font-medium">Email:</p>
-                                  <p className="col-span-3">{user.email}</p>
-                                </div>
-                                {user.phone && (
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Phone:</p>
-                                    <p className="col-span-3">{user.phone}</p>
-                                  </div>
-                                )}
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                  <p className="font-medium">ID Type:</p>
-                                  <div className="col-span-3">
-                                    {user.idType ? getIdTypeBadge(user.idType) : 'Not provided'}
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                  <p className="font-medium">ID Number:</p>
-                                  <p className="col-span-3">{user.idNumber || 'Not provided'}</p>
-                                </div>
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                  <p className="font-medium">Verification:</p>
-                                  <div className="col-span-3">{getVerificationBadge(user.isVerified)}</div>
-                                </div>
-                              </div>
-                              <DialogFooter className="flex gap-2">
-                                {!user.isVerified ? (
-                                  <Button 
-                                    variant="outline" 
-                                    className="border-green-500 text-green-700 hover:bg-green-50"
-                                    onClick={() => handleVerifyUser(user.id, true)}
-                                  >
-                                    <UserCheck className="h-4 w-4 mr-1" />
-                                    Verify User
-                                  </Button>
-                                ) : (
-                                  <Button 
-                                    variant="outline" 
-                                    className="border-red-500 text-red-700 hover:bg-red-50"
-                                    onClick={() => handleVerifyUser(user.id, false)}
-                                  >
-                                    <UserX className="h-4 w-4 mr-1" />
-                                    Remove Verification
-                                  </Button>
-                                )}
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </>
-  );
-};
-
-export default AdminDashboard;
+                                      <p className="col-span-3">{booking.serviceName}</
