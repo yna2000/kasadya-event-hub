@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isValid, parseISO } from 'date-fns';
@@ -879,4 +880,400 @@ const AdminDashboard = () => {
                                   <div className="grid gap-4 py-4">
                                     <div className="grid grid-cols-4 items-center gap-4">
                                       <p className="font-medium">Service:</p>
-                                      <p className="col-span-3">{booking.serviceName}</
+                                      <p className="col-span-3">{booking.serviceName}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Client:</p>
+                                      <p className="col-span-3">{booking.name || 'Client'}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Date/Time:</p>
+                                      <p className="col-span-3">{booking.date} {booking.time}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Amount:</p>
+                                      <p className="col-span-3">₱{booking.amount?.toLocaleString() || booking.totalPrice?.toLocaleString()}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Current Status:</p>
+                                      <div className="col-span-3">{getStatusBadge(booking.status)}</div>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Payment Status:</p>
+                                      <div className="col-span-3">{getPaymentBadge(booking.paymentStatus)}</div>
+                                    </div>
+                                  </div>
+                                  <DialogFooter className="flex-col sm:flex-row gap-2">
+                                    <div className="flex flex-col w-full gap-2">
+                                      <p className="text-sm font-medium mb-1">Update Booking Status:</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                                          onClick={() => handleUpdateStatus(booking.id, 'pending')}
+                                        >
+                                          <Clock className="h-4 w-4 mr-1" />
+                                          Pending
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-green-500 text-green-700 hover:bg-green-50"
+                                          onClick={() => handleUpdateStatus(booking.id, 'confirmed')}
+                                        >
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          Confirmed
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-blue-500 text-blue-700 hover:bg-blue-50"
+                                          onClick={() => handleUpdateStatus(booking.id, 'completed')}
+                                        >
+                                          <CheckCheck className="h-4 w-4 mr-1" />
+                                          Completed
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-red-500 text-red-700 hover:bg-red-50"
+                                          onClick={() => handleUpdateStatus(booking.id, 'cancelled')}
+                                        >
+                                          <XCircle className="h-4 w-4 mr-1" />
+                                          Cancelled
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col w-full gap-2 mt-4">
+                                      <p className="text-sm font-medium mb-1">Update Payment Status:</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-red-500 text-red-700 hover:bg-red-50"
+                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'unpaid')}
+                                        >
+                                          <AlertCircle className="h-4 w-4 mr-1" />
+                                          Unpaid
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-amber-500 text-amber-700 hover:bg-amber-50"
+                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'partial')}
+                                        >
+                                          <CreditCard className="h-4 w-4 mr-1" />
+                                          Partial
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+                                          onClick={() => handleUpdatePaymentStatus(booking.id, 'paid')}
+                                        >
+                                          <DollarSign className="h-4 w-4 mr-1" />
+                                          Paid
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </DialogFooter>
+                                </>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Verification</CardTitle>
+                <CardDescription>Verify vendor and client accounts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center mb-4">
+                  <Search className="h-4 w-4 mr-2" />
+                  <Input
+                    type="search"
+                    placeholder="Search users by name, email, or ID number..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>ID Type</TableHead>
+                      <TableHead>ID Number</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id || user.email}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          {user.isAdmin && (
+                            <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                              <Shield className="h-4 w-4 mr-1" />
+                              Admin
+                            </Badge>
+                          )}
+                          {user.isVendor && (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                              <Building className="h-4 w-4 mr-1" />
+                              Vendor
+                            </Badge>
+                          )}
+                          {!user.isAdmin && !user.isVendor && (
+                            <Badge className="bg-green-100 text-green-800 border-green-200">
+                              <User className="h-4 w-4 mr-1" />
+                              Client
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>{user.idType ? getIdTypeBadge(user.idType) : 'Not Provided'}</TableCell>
+                        <TableCell>{user.idNumber || 'Not Provided'}</TableCell>
+                        <TableCell>{getVerificationBadge(user.isVerified)}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            {user.isVerified ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="border-red-500 text-red-700 hover:bg-red-50"
+                                onClick={() => handleVerifyUser(user.id, false)}
+                              >
+                                <UserX className="h-4 w-4 mr-1" />
+                                Unverify
+                              </Button>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="border-green-500 text-green-700 hover:bg-green-50"
+                                onClick={() => handleVerifyUser(user.id, true)}
+                              >
+                                <UserCheck className="h-4 w-4 mr-1" />
+                                Verify
+                              </Button>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsUserDialogOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="services">
+            <Card>
+              <CardHeader>
+                <CardTitle>Service Verification</CardTitle>
+                <CardDescription>Approve or reject new service listings from vendors</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center mb-4">
+                  <Search className="h-4 w-4 mr-2" />
+                  <Input
+                    type="search"
+                    placeholder="Search services by name, vendor, or business type..."
+                    value={serviceSearchTerm}
+                    onChange={(e) => setServiceSearchTerm(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                
+                {filteredServices.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <h3 className="text-lg font-medium text-gray-900">No pending services</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      There are no services waiting for approval at the moment.
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Service Name</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead>Business Type</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredServices.map((service) => (
+                        <TableRow key={service.id}>
+                          <TableCell className="font-medium">{service.name}</TableCell>
+                          <TableCell>{service.vendorName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                              {service.businessType || 'Not specified'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>₱{service.price.toLocaleString()}</TableCell>
+                          <TableCell>{safeFormatDate(service.createdAt)}</TableCell>
+                          <TableCell className="text-right">
+                            <Dialog open={isServiceDialogOpen && selectedService?.id === service.id}
+                              onOpenChange={(open) => {
+                                setIsServiceDialogOpen(open);
+                                if (!open) setSelectedService(null);
+                              }}>
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setSelectedService(service);
+                                    setIsServiceDialogOpen(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Review
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-4xl">
+                                {selectedService && (
+                                  <>
+                                    <DialogHeader>
+                                      <DialogTitle>Review Service Listing</DialogTitle>
+                                      <DialogDescription>
+                                        Review the service details before approving or rejecting
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-6 py-4">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Card>
+                                          <CardHeader>
+                                            <CardTitle className="text-xl">{selectedService.name}</CardTitle>
+                                            <Badge variant="outline" className="mt-1 w-fit bg-blue-100 text-blue-800 border-blue-200">
+                                              {selectedService.businessType || 'Not specified'}
+                                            </Badge>
+                                          </CardHeader>
+                                          <CardContent>
+                                            <div className="space-y-2">
+                                              <div>
+                                                <p className="text-sm font-medium">Price:</p>
+                                                <p className="text-xl font-bold">₱{selectedService.price.toLocaleString()}</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-medium">Vendor:</p>
+                                                <p>{selectedService.vendorName}</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-medium">Description:</p>
+                                                <p className="text-sm mt-1">{selectedService.description}</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-medium">Location:</p>
+                                                <p className="text-sm">{selectedService.location || 'Not specified'}</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-medium">Contact:</p>
+                                                <p className="text-sm">{selectedService.contact || 'Not specified'}</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-medium">Submitted:</p>
+                                                <p className="text-sm">{safeFormatDate(selectedService.createdAt)}</p>
+                                              </div>
+                                            </div>
+                                          </CardContent>
+                                        </Card>
+                                        
+                                        <div className="space-y-4">
+                                          {selectedService.image && (
+                                            <Card>
+                                              <CardHeader>
+                                                <CardTitle className="text-sm">Service Image</CardTitle>
+                                              </CardHeader>
+                                              <CardContent>
+                                                <div className="rounded-md overflow-hidden border">
+                                                  <img 
+                                                    src={selectedService.image} 
+                                                    alt={selectedService.name} 
+                                                    className="w-full h-auto object-cover"
+                                                  />
+                                                </div>
+                                              </CardContent>
+                                            </Card>
+                                          )}
+                                          
+                                          <Card>
+                                            <CardHeader>
+                                              <CardTitle className="text-sm">Admin Comments</CardTitle>
+                                              <CardDescription>Add comments or feedback about this service (optional)</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                              <Textarea 
+                                                placeholder="Enter comments or feedback for the vendor..."
+                                                value={adminComment}
+                                                onChange={(e) => setAdminComment(e.target.value)}
+                                                className="min-h-[100px]"
+                                              />
+                                            </CardContent>
+                                          </Card>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        className="border-red-500 text-red-700 hover:bg-red-50"
+                                        onClick={() => handleRejectService(selectedService.id)}
+                                      >
+                                        <ThumbsDown className="h-4 w-4 mr-1" />
+                                        Reject Service
+                                      </Button>
+                                      <Button 
+                                        className="bg-green-600 hover:bg-green-700"
+                                        onClick={() => handleApproveService(selectedService.id)}
+                                      >
+                                        <ThumbsUp className="h-4 w-4 mr-1" />
+                                        Approve Service
+                                      </Button>
+                                    </DialogFooter>
+                                  </>
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
+  );
+};
+
+export default AdminDashboard;
+
