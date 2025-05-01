@@ -79,7 +79,7 @@ const AdminDashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
-  const [serviceToDelete, setServiceToDelete] = useState(null);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [adminComment, setAdminComment] = useState('');
 
   // Helper function to safely format dates
@@ -438,6 +438,47 @@ const AdminDashboard = () => {
       (service.vendorName && service.vendorName.toLowerCase().includes(serviceSearchTerm.toLowerCase()))
     );
   });
+
+    // Implement the confirmDeleteService function
+    const confirmDeleteService = () => {
+      try {
+        if (!serviceToDelete) return;
+        
+        const storedServices = localStorage.getItem('vendorServices');
+        if (storedServices) {
+          const allServices = JSON.parse(storedServices);
+          const updatedServices = allServices.filter(
+            (service: any) => service.id !== serviceToDelete
+          );
+          
+          localStorage.setItem('vendorServices', JSON.stringify(updatedServices));
+          
+          // Update UI state
+          setServices(services.filter(service => service.id !== serviceToDelete));
+          
+          toast({
+            title: "Service Deleted",
+            description: "The service has been successfully deleted.",
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting service:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete the service. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setServiceToDelete(null);
+      }
+    };
+  
+    // Function to open the delete dialog
+    const handleDeleteService = (serviceId: string) => {
+      setServiceToDelete(serviceId);
+      setIsDeleteDialogOpen(true);
+    };
 
   return (
     <div className="container mx-auto py-10">
@@ -814,472 +855,4 @@ const AdminDashboard = () => {
                                     <p className="col-span-3">{booking.date} {booking.time}</p>
                                   </div>
                                   <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Amount:</p>
-                                    <p className="col-span-3">₱{booking.amount?.toLocaleString() || booking.totalPrice?.toLocaleString()}</p>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Current Status:</p>
-                                    <div className="col-span-3">{getStatusBadge(booking.status)}</div>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Payment Status:</p>
-                                    <div className="col-span-3">{getPaymentBadge(booking.paymentStatus)}</div>
-                                  </div>
-                                </div>
-                                <DialogFooter className="flex-col sm:flex-row gap-2">
-                                  <div className="flex flex-col w-full gap-2">
-                                    <p className="text-sm font-medium mb-1">Update Booking Status:</p>
-                                    <div className="flex flex-wrap gap-2">
-                                      <Button 
-                                        variant="outline" 
-                                        className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
-                                        onClick={() => handleUpdateStatus(booking.id, 'pending')}
-                                      >
-                                        <Clock className="h-4 w-4 mr-1" />
-                                        Pending
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        className="border-green-500 text-green-700 hover:bg-green-50"
-                                        onClick={() => handleUpdateStatus(booking.id, 'confirmed')}
-                                      >
-                                        <CheckCircle className="h-4 w-4 mr-1" />
-                                        Confirmed
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        className="border-blue-500 text-blue-700 hover:bg-blue-50"
-                                        onClick={() => handleUpdateStatus(booking.id, 'completed')}
-                                      >
-                                        <CheckCheck className="h-4 w-4 mr-1" />
-                                        Completed
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        className="border-red-500 text-red-700 hover:bg-red-50"
-                                        onClick={() => handleUpdateStatus(booking.id, 'cancelled')}
-                                      >
-                                        <XCircle className="h-4 w-4 mr-1" />
-                                        Cancelled
-                                      </Button>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex flex-col w-full gap-2 mt-4">
-                                    <p className="text-sm font-medium mb-1">Update Payment Status:</p>
-                                    <div className="flex flex-wrap gap-2">
-                                      <Button 
-                                        variant="outline" 
-                                        className="border-red-500 text-red-700 hover:bg-red-50"
-                                        onClick={() => handleUpdatePaymentStatus(booking.id, 'unpaid')}
-                                      >
-                                        <AlertCircle className="h-4 w-4 mr-1" />
-                                        Unpaid
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        className="border-amber-500 text-amber-700 hover:bg-amber-50"
-                                        onClick={() => handleUpdatePaymentStatus(booking.id, 'partial')}
-                                      >
-                                        <CreditCard className="h-4 w-4 mr-1" />
-                                        Partial
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
-                                        onClick={() => handleUpdatePaymentStatus(booking.id, 'paid')}
-                                      >
-                                        <DollarSign className="h-4 w-4 mr-1" />
-                                        Paid
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </DialogFooter>
-                              </>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Verification</CardTitle>
-              <CardDescription>Verify users and manage user accounts.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 mb-4">
-                <Search className="h-4 w-4" />
-                <Input
-                  type="search"
-                  placeholder="Search users..."
-                  value={userSearchTerm}
-                  onChange={(e) => setUserSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Account Type</TableHead>
-                    <TableHead>ID Type</TableHead>
-                    <TableHead>Verification</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{user.name}</span>
-                          <span className="text-xs text-muted-foreground">{user.phone || 'No phone'}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.isVendor ? "default" : "secondary"}>
-                          {user.isVendor ? 'Vendor' : 'Client'}
-                        </Badge>
-                        {user.isVendor && user.businessType && (
-                          <Badge variant="outline" className="ml-2 capitalize">
-                            {user.businessType}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {user.idType ? getIdTypeBadge(user.idType) : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {getVerificationBadge(user.isVerified)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setIsUserDialogOpen(true);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Verify
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            {selectedUser && (
-                              <>
-                                <DialogHeader>
-                                  <DialogTitle>User Verification</DialogTitle>
-                                  <DialogDescription>
-                                    Review user details and verify account
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Name:</p>
-                                    <p className="col-span-3">{selectedUser.name}</p>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Email:</p>
-                                    <p className="col-span-3">{selectedUser.email}</p>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Phone:</p>
-                                    <p className="col-span-3">{selectedUser.phone || 'No phone provided'}</p>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Account Type:</p>
-                                    <p className="col-span-3">
-                                      {selectedUser.isVendor ? 'Vendor' : 'Client'}
-                                      {selectedUser.isVendor && selectedUser.businessType && (
-                                        <Badge variant="outline" className="ml-2 capitalize">
-                                          {selectedUser.businessType}
-                                        </Badge>
-                                      )}
-                                    </p>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">ID Type:</p>
-                                    <p className="col-span-3">{selectedUser.idType || 'No ID type'}</p>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">ID Number:</p>
-                                    <p className="col-span-3">{selectedUser.idNumber || 'No ID number'}</p>
-                                  </div>
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                    <p className="font-medium">Status:</p>
-                                    <div className="col-span-3">{getVerificationBadge(selectedUser.isVerified)}</div>
-                                  </div>
-                                </div>
-                                <DialogFooter className="flex-col sm:flex-row gap-2">
-                                  <Button 
-                                    variant="destructive"
-                                    onClick={() => handleVerifyUser(selectedUser.id, false)}
-                                  >
-                                    <UserX className="h-4 w-4 mr-1" />
-                                    Mark as Unverified
-                                  </Button>
-                                  <Button 
-                                    className="bg-green-600 hover:bg-green-700"
-                                    onClick={() => handleVerifyUser(selectedUser.id, true)}
-                                  >
-                                    <UserCheck className="h-4 w-4 mr-1" />
-                                    Verify User
-                                  </Button>
-                                </DialogFooter>
-                              </>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="services">
-          <Card>
-            <CardHeader>
-              <CardTitle>Service Verification</CardTitle>
-              <CardDescription>Review and approve vendor service submissions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2 mb-4">
-                <Search className="h-4 w-4" />
-                <Input
-                  type="search"
-                  placeholder="Search services..."
-                  value={serviceSearchTerm}
-                  onChange={(e) => setServiceSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
-              
-              {filteredServices.length === 0 ? (
-                <div className="text-center py-12">
-                  <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No pending service submissions</h3>
-                  <p className="text-muted-foreground">
-                    All vendor service submissions have been reviewed
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Vendor</TableHead>
-                      <TableHead>Business Type</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredServices.map((service) => (
-                      <TableRow key={service.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            {service.images && service.images.length > 0 ? (
-                              <img 
-                                src={service.images[0]} 
-                                alt={service.name} 
-                                className="h-10 w-10 rounded-md object-cover"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center">
-                                <Package className="h-5 w-5 text-gray-500" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium">{service.name}</p>
-                              <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                {service.description.substring(0, 50)}
-                                {service.description.length > 50 ? '...' : ''}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{service.vendorName || 'Unknown Vendor'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {service.businessType || 'Not specified'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>₱{service.price.toLocaleString()}</TableCell>
-                        <TableCell>{safeFormatDate(service.createdAt)}</TableCell>
-                        <TableCell className="text-right">
-                          <Dialog open={isServiceDialogOpen && selectedService?.id === service.id} onOpenChange={(open) => {
-                            setIsServiceDialogOpen(open);
-                            if (!open) {
-                              setSelectedService(null);
-                              setAdminComment('');
-                            }
-                          }}>
-                            <DialogTrigger asChild>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => {
-                                  setSelectedService(service);
-                                  setIsServiceDialogOpen(true);
-                                }}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Review
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-3xl">
-                              {selectedService && (
-                                <>
-                                  <DialogHeader>
-                                    <DialogTitle>Review Service Submission</DialogTitle>
-                                    <DialogDescription>
-                                      Review the service details and approve or reject the submission
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                                    <div>
-                                      <h3 className="font-semibold mb-2">Service Details</h3>
-                                      <div className="space-y-3">
-                                        <div>
-                                          <p className="text-sm font-medium text-muted-foreground">Name</p>
-                                          <p>{selectedService.name}</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-sm font-medium text-muted-foreground">Category</p>
-                                          <Badge variant="outline" className="capitalize">
-                                            {selectedService.category}
-                                          </Badge>
-                                        </div>
-                                        <div>
-                                          <p className="text-sm font-medium text-muted-foreground">Description</p>
-                                          <p className="text-sm">{selectedService.description}</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-sm font-medium text-muted-foreground">Price</p>
-                                          <p>₱{selectedService.price.toLocaleString()}</p>
-                                        </div>
-                                      </div>
-                                      
-                                      <h3 className="font-semibold mt-6 mb-2">Vendor Information</h3>
-                                      <div className="space-y-3">
-                                        <div>
-                                          <p className="text-sm font-medium text-muted-foreground">Vendor Name</p>
-                                          <p>{selectedService.vendorName || 'Unknown'}</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-sm font-medium text-muted-foreground">Business Type</p>
-                                          <Badge variant="outline" className="capitalize">
-                                            {selectedService.businessType || 'Not specified'}
-                                          </Badge>
-                                        </div>
-                                        <div>
-                                          <p className="text-sm font-medium text-muted-foreground">Submission Date</p>
-                                          <p>{safeFormatDate(selectedService.createdAt)}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    
-                                    <div>
-                                      <h3 className="font-semibold mb-2">Service Images</h3>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        {selectedService.images && selectedService.images.length > 0 ? (
-                                          selectedService.images.map((image, index) => (
-                                            <img 
-                                              key={index}
-                                              src={image}
-                                              alt={`Service image ${index + 1}`}
-                                              className="rounded-md w-full h-32 object-cover"
-                                            />
-                                          ))
-                                        ) : (
-                                          <div className="rounded-md bg-gray-100 h-32 flex items-center justify-center">
-                                            <p className="text-gray-500">No images provided</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                      
-                                      <div className="mt-6">
-                                        <h3 className="font-semibold mb-2">Admin Comment</h3>
-                                        <Textarea
-                                          placeholder="Add notes or feedback about this service (optional)"
-                                          value={adminComment}
-                                          onChange={(e) => setAdminComment(e.target.value)}
-                                          className="w-full"
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
-                                    <Button 
-                                      variant="destructive"
-                                      onClick={() => handleRejectService(selectedService.id)}
-                                    >
-                                      <ThumbsDown className="h-4 w-4 mr-1" />
-                                      Reject Service
-                                    </Button>
-                                    <Button 
-                                      className="bg-green-600 hover:bg-green-700"
-                                      onClick={() => handleApproveService(selectedService.id)}
-                                    >
-                                      <ThumbsUp className="h-4 w-4 mr-1" />
-                                      Approve Service
-                                    </Button>
-                                  </DialogFooter>
-                                </>
-                              )}
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Service</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this service? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDeleteService}>
-              Delete
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default AdminDashboard;
+                                    <p className="font-medium">
