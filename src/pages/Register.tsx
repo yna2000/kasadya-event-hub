@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { AlertCircle, Shield } from 'lucide-react';
+import { AlertCircle, Shield, Package } from 'lucide-react';
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -93,7 +92,11 @@ const Register = () => {
       );
       
       if (success) {
-        navigate('/dashboard');
+        if (data.role === 'vendor') {
+          navigate('/post-service'); // Redirect vendors to post service
+        } else {
+          navigate('/dashboard'); // Redirect customers to dashboard
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -117,6 +120,7 @@ const Register = () => {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              
               <FormField
                 control={form.control}
                 name="name"
@@ -243,6 +247,16 @@ const Register = () => {
                         <SelectItem value="vendor">Vendor offering services</SelectItem>
                       </SelectContent>
                     </Select>
+                    {role === 'vendor' && (
+                      <div className="mt-2 p-3 bg-purple-50 rounded-md border border-purple-100">
+                        <div className="flex items-start gap-2">
+                          <Package className="h-4 w-4 text-purple-500 mt-0.5" />
+                          <p className="text-xs text-purple-700">
+                            As a vendor, you'll need to be verified before posting services. Once registered, you can start creating your service listings.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

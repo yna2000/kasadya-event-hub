@@ -10,7 +10,7 @@ export type UserType = {
   address?: string;
   isAdmin?: boolean;
   isVendor?: boolean;
-  businessType?: string; // Added business type field
+  businessType?: string;
   idType?: 'national_id' | 'passport' | 'drivers_license';
   idNumber?: string;
   isVerified?: boolean;
@@ -202,7 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         idType,
         idNumber,
         businessType: role === 'vendor' ? businessType : undefined, // Only set business type for vendors
-        isVerified: false, // Initially set to false until admin verifies
+        isVerified: role === 'vendor' ? false : true, // Vendors need verification, customers don't
         isAdmin: false, // Default to non-admin
         isVendor: role === 'vendor', // Set isVendor based on role
         createdAt: new Date().toISOString(),
@@ -220,17 +220,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(userWithoutPassword);
       localStorage.setItem('user', JSON.stringify(userWithoutPassword));
       
-      // Create a welcome notification
+      // Create a welcome notification with appropriate message based on role
+      const notificationMessage = role === 'vendor' 
+        ? `Thank you for registering, ${name}! Your ID verification is pending admin approval. Once approved, you can start posting services.`
+        : `Thank you for registering, ${name}! Welcome to Kasadya Marketplace.`;
+        
       createNotification(
         userWithoutPassword.id,
         "Welcome to Kasadya Marketplace!",
-        `Thank you for registering, ${name}! Your ID verification is pending admin approval.`,
+        notificationMessage,
         'system'
       );
       
       toast({
         title: "Registration successful",
-        description: "Welcome to Kasadya Marketplace! Your account is pending ID verification."
+        description: role === 'vendor' 
+          ? "Welcome to Kasadya Marketplace! Your account is pending ID verification."
+          : "Welcome to Kasadya Marketplace!"
       });
       
       setIsLoading(false);
