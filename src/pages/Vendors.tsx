@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Search, Plus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
 
 const Vendors = () => {
   const [vendors, setVendors] = useState([]);
   const [services, setServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -79,6 +81,34 @@ const Vendors = () => {
   };
 
   const handleVendorClick = (vendorId) => {
+    // Check if terms and conditions were already accepted
+    const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
+    
+    if (!termsAccepted) {
+      // Show terms and conditions first before proceeding to vendor page
+      setShowTermsModal(true);
+      // Store the vendorId to navigate after accepting terms
+      localStorage.setItem('pendingVendorNavigation', vendorId);
+    } else {
+      // Terms already accepted, proceed directly
+      navigateToVendor(vendorId);
+    }
+  };
+  
+  const handleAcceptTerms = () => {
+    // Get the stored vendorId
+    const vendorId = localStorage.getItem('pendingVendorNavigation');
+    setShowTermsModal(false);
+    
+    if (vendorId) {
+      // Clear the pending navigation
+      localStorage.removeItem('pendingVendorNavigation');
+      // Navigate to the vendor page
+      navigateToVendor(vendorId);
+    }
+  };
+  
+  const navigateToVendor = (vendorId) => {
     // Find services by this vendor
     const vendorServices = services.filter(service => service.vendorId === vendorId);
     
@@ -190,6 +220,13 @@ const Vendors = () => {
           <p className="text-gray-500 mb-4">Try adjusting your search or check back later</p>
         </div>
       )}
+
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditionsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={handleAcceptTerms}
+      />
     </div>
   );
 };
