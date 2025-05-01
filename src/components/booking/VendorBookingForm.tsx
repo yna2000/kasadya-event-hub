@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Shield, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, Shield, Info, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
@@ -32,6 +33,7 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import BookingOtpVerification from './BookingOtpVerification';
 import { Checkbox } from '@/components/ui/checkbox';
 import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const bookingSchema = z.object({
   date: z.date({
@@ -63,11 +65,13 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { createBooking } = useBooking();
+  const { createBooking, isDateAvailable } = useBooking();
   const { addNotification } = useNotifications();
   const [showOtpVerification, setShowOtpVerification] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [bookingData, setBookingData] = useState<BookingFormData | null>(null);
+  const [availableDates, setAvailableDates] = useState<Date[]>([]);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -76,6 +80,12 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
       agreeToTerms: false,
     },
   });
+
+  // Function to check if a date is already booked for this vendor
+  const isDateBooked = (date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return !isDateAvailable(dateStr, vendor.id);
+  };
 
   const handleSubmit = async (data: BookingFormData) => {
     if (!user) {
@@ -86,6 +96,19 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
       });
       onClose();
       navigate('/login');
+      return;
+    }
+
+    // Check if the date is available before proceeding
+    const dateStr = format(data.date, 'yyyy-MM-dd');
+    const dateAvailable = isDateAvailable(dateStr, vendor.id);
+    
+    if (!dateAvailable) {
+      toast({
+        title: "Date Unavailable",
+        description: "This date is already booked for this vendor. Please select another date.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -102,32 +125,48 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
 
   const handleOtpVerified = async () => {
     if (!bookingData || !user) return;
+    
+    try {
+      setIsCheckingAvailability(true);
+      
+      // Double-check availability right before booking
+      const dateStr = format(bookingData.date, 'yyyy-MM-dd');
+      const dateAvailable = isDateAvailable(dateStr, vendor.id);
+      
+      if (!dateAvailable) {
+        toast({
+          title: "Date Unavailable",
+          description: "This date was just booked by someone else. Please select another date.",
+          variant: "destructive",
+        });
+        setShowOtpVerification(false);
+        return;
+      }
 
-    // In a real app, the amount would be calculated based on the service
-    const amount = Math.floor(Math.random() * 500) + 100;
+      // In a real app, the amount would be calculated based on the service
+      const amount = Math.floor(Math.random() * 500) + 100;
 
-    // Create the booking with all required properties
-    const success = await createBooking({
-      vendorId: vendor.id,
-      vendorName: vendor.name,
-      userId: user.id,
-      serviceId: vendor.id, // Using vendor.id as a fallback
-      serviceName: service,
-      serviceDescription: `${service} provided by ${vendor.name}`,
-      date: bookingData.date.toISOString(),
-      time: bookingData.time,
-      amount: amount,
-      notes: bookingData.notes || '',
-      // Add the missing properties required by the Booking interface
-      name: user.name,
-      email: user.email,
-      roomType: service, // Using service as roomType
-      checkInDate: bookingData.date.toISOString().split('T')[0],
-      checkOutDate: bookingData.date.toISOString().split('T')[0], // Same as checkInDate for non-hotel services
-      totalPrice: amount,
-    });
+      // Create the booking with all required properties
+      const bookingResult = await createBooking({
+        vendorId: vendor.id,
+        vendorName: vendor.name,
+        userId: user.id,
+        serviceId: vendor.id, // Using vendor.id as a fallback
+        serviceName: service,
+        serviceDescription: `${service} provided by ${vendor.name}`,
+        date: dateStr,
+        time: bookingData.time,
+        amount: amount,
+        notes: bookingData.notes || '',
+        // Add the missing properties required by the Booking interface
+        name: user.name,
+        email: user.email,
+        roomType: service, // Using service as roomType
+        checkInDate: dateStr,
+        checkOutDate: dateStr, // Same as checkInDate for non-hotel services
+        totalPrice: amount,
+      });
 
-    if (success) {
       // Create a notification for both the customer and vendor
       addNotification({
         userId: user.id,
@@ -148,6 +187,16 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
 
       onClose();
       navigate('/dashboard');
+      
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        title: "Booking Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingAvailability(false);
     }
   };
 
@@ -174,6 +223,13 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-700">
+                      Dates already booked for this vendor will appear disabled in the calendar.
+                    </AlertDescription>
+                  </Alert>
+                  
                   <FormField
                     control={form.control}
                     name="date"
@@ -202,7 +258,13 @@ const VendorBookingForm = ({ isOpen, onClose, vendor, service = vendor?.category
                               selected={field.value}
                               onSelect={field.onChange}
                               initialFocus
-                              disabled={(date) => date < new Date()}
+                              disabled={(date) => {
+                                // Disable past dates
+                                if (date < new Date()) return true;
+                                // Disable dates that are already booked
+                                return isDateBooked(date);
+                              }}
+                              className="pointer-events-auto"
                             />
                           </PopoverContent>
                         </Popover>

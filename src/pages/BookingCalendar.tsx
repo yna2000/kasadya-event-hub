@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
@@ -7,16 +6,18 @@ import { useBooking } from '@/contexts/BookingContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, CalendarMinus, AlertCircle } from 'lucide-react';
+import { CalendarCheck, CalendarMinus, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const BookingCalendar = () => {
-  const { bookings, getBookedDates, getBookingsByDate } = useBooking();
+  const { bookings, getBookedDates, getBookingsByDate, isDateAvailable } = useBooking();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [bookedDates, setBookedDates] = useState<Date[]>([]);
   const [dateBookings, setDateBookings] = useState<any[]>([]);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
 
   // Load booked dates when component mounts
   useEffect(() => {
@@ -36,29 +37,30 @@ const BookingCalendar = () => {
   }, [selectedDate, getBookingsByDate]);
 
   // Function to determine if a date is booked
-  const isDateBooked = (date: Date) => {
-    return bookedDates.some(
-      bookedDate => format(bookedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-    );
-  };
-
-  // Render functions for calendar UI
-  const renderDay = (day: Date) => {
-    const isBooked = isDateBooked(day);
+  const isDateUnavailable = (date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
     
-    return (
-      <div className={`relative ${isBooked ? 'text-white' : ''}`}>
-        {day.getDate()}
-        {isBooked && (
-          <div className="absolute inset-0 bg-red-500 opacity-50 rounded-full" />
-        )}
-      </div>
+    // If filtering by vendor, check only that vendor's bookings
+    if (selectedVendorId) {
+      return !isDateAvailable(dateStr, selectedVendorId);
+    }
+    
+    // Otherwise check all bookings
+    return bookedDates.some(
+      bookedDate => format(bookedDate, 'yyyy-MM-dd') === dateStr
     );
   };
 
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">Booking Calendar</h1>
+      
+      <Alert className="mb-6 bg-blue-50 border-blue-200">
+        <Info className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-blue-700">
+          Check date availability before making a booking. Red dates are already booked and unavailable.
+        </AlertDescription>
+      </Alert>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-1">
@@ -71,20 +73,28 @@ const BookingCalendar = () => {
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              className="border rounded-md"
-              components={{
-                DayContent: ({ date }) => renderDay(date),
-              }}
+              className="border rounded-md pointer-events-auto"
               modifiers={{
                 booked: bookedDates,
               }}
               modifiersStyles={{
                 booked: { backgroundColor: 'rgba(239, 68, 68, 0.2)' },
               }}
+              disabled={(date) => {
+                // Disable past dates
+                if (date < new Date()) return true;
+                return false;
+              }}
             />
-            <div className="mt-4 flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 opacity-50 rounded-full"></div>
-              <span className="text-sm">Booked Date</span>
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-500 opacity-50 rounded-full"></div>
+                <span className="text-sm">Booked Date</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gray-300 opacity-50 rounded-full"></div>
+                <span className="text-sm">Past Date (Unavailable)</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -108,11 +118,24 @@ const BookingCalendar = () => {
                 <p className="text-lg font-medium">This date is available for booking!</p>
                 {user && (
                   <Button 
-                    className="mt-4"
+                    className="mt-4 bg-kasadya-purple hover:bg-kasadya-deep-purple"
                     onClick={() => navigate('/vendors')}
                   >
-                    Book for this date
+                    Find vendors for this date
                   </Button>
+                )}
+                {!user && (
+                  <div className="mt-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      You need to be logged in to make a booking
+                    </p>
+                    <Button 
+                      onClick={() => navigate('/login')}
+                      className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                    >
+                      Log in to book
+                    </Button>
+                  </div>
                 )}
               </div>
             ) : (
@@ -143,18 +166,21 @@ const BookingCalendar = () => {
                   </div>
                 ))}
                 
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
-                  <div className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-amber-500 mr-2 mt-0.5" />
-                    <div>
-                      <h3 className="font-medium text-amber-800">This date has bookings</h3>
-                      <p className="text-sm text-amber-700">
-                        The date already has scheduled bookings. You may still be able to book 
-                        depending on availability and time slots.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <Alert className="bg-amber-50 border-amber-200 mt-4">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  <AlertDescription className="text-amber-700">
+                    This date has existing bookings. Some vendors might be unavailable.
+                  </AlertDescription>
+                </Alert>
+                
+                {user && (
+                  <Button 
+                    className="mt-2 w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                    onClick={() => navigate('/vendors')}
+                  >
+                    Check available vendors
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>

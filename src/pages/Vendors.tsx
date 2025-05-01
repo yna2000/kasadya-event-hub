@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -65,6 +65,10 @@ const Vendors = () => {
     navigate('/post-service');
   };
 
+  const handleCheckAvailabilityClick = () => {
+    navigate('/booking-calendar');
+  };
+
   const filteredVendors = vendors.filter(vendor => {
     return (
       vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -94,13 +98,24 @@ const Vendors = () => {
             />
           </div>
           
-          <Button 
-            onClick={handlePostServiceClick}
-            className="bg-kasadya-purple hover:bg-kasadya-deep-purple w-full sm:w-auto"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Post New Service
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              variant="outline"
+              onClick={handleCheckAvailabilityClick}
+              className="w-full sm:w-auto"
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Check Availability
+            </Button>
+            
+            <Button 
+              onClick={handlePostServiceClick}
+              className="bg-kasadya-purple hover:bg-kasadya-deep-purple w-full sm:w-auto"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Post New Service
+            </Button>
+          </div>
         </div>
       </div>
 
