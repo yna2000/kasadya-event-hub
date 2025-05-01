@@ -881,6 +881,127 @@ const AdminDashboard = () => {
                                 View
                               </Button>
                             </DialogTrigger>
+                            <DialogContent>
+                              {selectedBooking && (
+                                <>
+                                  <DialogHeader>
+                                    <DialogTitle>Manage Booking</DialogTitle>
+                                    <DialogDescription>
+                                      Update the status and payment information for this booking
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="grid gap-4 py-4">
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Service:</p>
+                                      <p className="col-span-3">{selectedBooking.serviceName}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Client:</p>
+                                      <p className="col-span-3">{selectedBooking.name || 'Client'}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Date/Time:</p>
+                                      <p className="col-span-3">{selectedBooking.date} {selectedBooking.time}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Amount:</p>
+                                      <p className="col-span-3">₱{selectedBooking.amount?.toLocaleString() || selectedBooking.totalPrice?.toLocaleString()}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Current Status:</p>
+                                      <div className="col-span-3">{getStatusBadge(selectedBooking.status)}</div>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Payment Status:</p>
+                                      <div className="col-span-3">{getPaymentBadge(selectedBooking.paymentStatus)}</div>
+                                    </div>
+                                  </div>
+                                  <DialogFooter className="flex-col sm:flex-row gap-2">
+                                    <div className="flex flex-col w-full gap-2">
+                                      <p className="text-sm font-medium mb-1">Update Booking Status:</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                                          onClick={() => handleUpdateStatus(selectedBooking.id, 'pending')}
+                                        >
+                                          <Clock className="h-4 w-4 mr-1" />
+                                          Pending
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-green-500 text-green-700 hover:bg-green-50"
+                                          onClick={() => handleUpdateStatus(selectedBooking.id, 'confirmed')}
+                                        >
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          Confirmed
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-blue-500 text-blue-700 hover:bg-blue-50"
+                                          onClick={() => handleUpdateStatus(selectedBooking.id, 'completed')}
+                                        >
+                                          <CheckCheck className="h-4 w-4 mr-1" />
+                                          Completed
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-red-500 text-red-700 hover:bg-red-50"
+                                          onClick={() => handleUpdateStatus(selectedBooking.id, 'cancelled')}
+                                        >
+                                          <XCircle className="h-4 w-4 mr-1" />
+                                          Cancelled
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col w-full gap-2 mt-4">
+                                      <p className="text-sm font-medium mb-1">Update Payment Status:</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-red-500 text-red-700 hover:bg-red-50"
+                                          onClick={() => handleUpdatePaymentStatus(selectedBooking.id, 'unpaid')}
+                                        >
+                                          <AlertCircle className="h-4 w-4 mr-1" />
+                                          Unpaid
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-amber-500 text-amber-700 hover:bg-amber-50"
+                                          onClick={() => handleUpdatePaymentStatus(selectedBooking.id, 'partial')}
+                                        >
+                                          <CreditCard className="h-4 w-4 mr-1" />
+                                          Partial
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
+                                          onClick={() => handleUpdatePaymentStatus(selectedBooking.id, 'paid')}
+                                        >
+                                          <DollarSign className="h-4 w-4 mr-1" />
+                                          Paid
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col w-full gap-2 mt-4">
+                                      <p className="text-sm font-medium mb-1">Other Actions:</p>
+                                      <Button 
+                                        variant="destructive" 
+                                        onClick={() => {
+                                          setIsDialogOpen(false);
+                                          handleDeleteBooking(selectedBooking.id);
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-1" />
+                                        Delete Booking
+                                      </Button>
+                                    </div>
+                                  </DialogFooter>
+                                </>
+                              )}
+                            </DialogContent>
                           </Dialog>
 
                           <Button 

@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Vendors = () => {
   const [vendors, setVendors] = useState([]);
+  const [services, setServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -16,21 +17,29 @@ const Vendors = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Fetch vendors from localStorage (in a real app, this would be an API call)
-    const fetchVendors = () => {
+    const fetchData = () => {
       try {
         setIsLoading(true);
+        // Fetch vendors
         const storedUsers = localStorage.getItem('users');
         if (storedUsers) {
           const allUsers = JSON.parse(storedUsers);
-          const vendorUsers = allUsers.filter(user => user.isVendor);
+          const vendorUsers = allUsers.filter(user => user.isVendor && user.isVerified);
           setVendors(vendorUsers);
         }
+
+        // Fetch services
+        const storedServices = localStorage.getItem('vendorServices');
+        if (storedServices) {
+          const allServices = JSON.parse(storedServices);
+          const approvedServices = allServices.filter(service => service.isApproved === true);
+          setServices(approvedServices);
+        }
       } catch (error) {
-        console.error('Error fetching vendors:', error);
+        console.error('Error fetching data:', error);
         toast({
           title: "Error",
-          description: "Failed to load vendors.",
+          description: "Failed to load vendors and services.",
           variant: "destructive",
         });
       } finally {
@@ -38,7 +47,7 @@ const Vendors = () => {
       }
     };
 
-    fetchVendors();
+    fetchData();
   }, [toast]);
 
   const handlePostServiceClick = () => {
@@ -67,6 +76,19 @@ const Vendors = () => {
 
   const handleCheckAvailabilityClick = () => {
     navigate('/booking-calendar');
+  };
+
+  const handleVendorClick = (vendorId) => {
+    // Find services by this vendor
+    const vendorServices = services.filter(service => service.vendorId === vendorId);
+    
+    if (vendorServices.length > 0) {
+      // Navigate to the first service from the vendor
+      navigate(`/vendor/${vendorId}/service/${vendorServices[0].id}`);
+    } else {
+      // Navigate to vendor profile even if they have no services
+      navigate(`/vendor/${vendorId}`);
+    }
   };
 
   const filteredVendors = vendors.filter(vendor => {
@@ -129,7 +151,7 @@ const Vendors = () => {
             <div 
               key={vendor.id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => navigate(`/vendor/${vendor.id}`)}
+              onClick={() => handleVendorClick(vendor.id)}
             >
               <div className="h-40 bg-gray-200 flex items-center justify-center">
                 {vendor.profileImage ? (
