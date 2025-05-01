@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isValid, parseISO } from 'date-fns';
@@ -39,10 +40,6 @@ import {
   DollarSign,
   Filter,
   Search,
-  Shield,
-  User,
-  UserCheck,
-  UserX,
   Eye,
   ArrowUpDown,
   CheckCheck,
@@ -50,12 +47,7 @@ import {
   CreditCard,
   Wallet,
   Building,
-  Package,
-  ShieldCheck,
   Trash2,
-  ThumbsUp,
-  ThumbsDown,
-  MessageSquare
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -869,5 +861,328 @@ const AdminDashboard = () => {
                             </span>
                           </div>
                         </TableCell>
+                        <TableCell>{booking.date} {booking.time}</TableCell>
+                        <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                        <TableCell>₱{booking.amount?.toLocaleString() || booking.totalPrice?.toLocaleString()}</TableCell>
+                        <TableCell>{getPaymentBadge(booking.paymentStatus)}</TableCell>
+                        <TableCell>{getPaymentMethodBadge(booking.paymentMethod)}</TableCell>
+                        <TableCell className="text-right">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedBooking(booking);
+                                  setIsDialogOpen(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </DialogTrigger>
+                          </Dialog>
+
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            onClick={() => handleDeleteBooking(booking.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8">
+                        <p className="text-gray-500">No bookings found matching your filters</p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>User Verification</CardTitle>
+              <CardDescription>Verify vendors and users</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <div className="flex items-center">
+                  <Search className="h-4 w-4 mr-2" />
+                  <Input
+                    type="search"
+                    placeholder="Search users..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="w-full max-w-md"
+                  />
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.filter(u => u.isVendor).map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          <div className="flex flex-
+                          {user.isAdmin ? (
+                            <Badge className="bg-purple-100 text-purple-800 border-purple-300">Admin</Badge>
+                          ) : user.isVendor ? (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-300">Vendor</Badge>
+                          ) : (
+                            <Badge className="bg-gray-100 text-gray-800 border-gray-300">Client</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>{getVerificationBadge(user.isVerified)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {!user.isVerified ? (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-green-500 text-green-700 hover:bg-green-50"
+                                onClick={() => handleVerifyUser(user.id, true)}
+                              >
+                                Verify
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                                onClick={() => handleVerifyUser(user.id, false)}
+                              >
+                                Unverify
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <p className="text-gray-500">No users found</p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="services">
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Service Verification</CardTitle>
+              <CardDescription>Manage service postings from vendors</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <div className="flex items-center">
+                  <Search className="h-4 w-4 mr-2" />
+                  <Input
+                    type="search"
+                    placeholder="Search services..."
+                    value={serviceSearchTerm}
+                    onChange={(e) => setServiceSearchTerm(e.target.value)}
+                    className="w-full max-w-md"
+                  />
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredServices.length > 0 ? (
+                    filteredServices.map((service) => (
+                      <TableRow key={service.id}>
+                        <TableCell>
+                          <div className="font-medium">{service.name}</div>
+                          <div className="text-xs text-muted-foreground max-w-[300px] truncate">
+                            {service.description?.substring(0, 60)}{service.description?.length > 60 ? '...' : ''}
+                          </div>
+                        </TableCell>
+                        <TableCell>{service.vendorName}</TableCell>
+                        <TableCell>₱{service.price?.toLocaleString()}</TableCell>
+                        <TableCell>
+                          {service.isApproved ? (
+                            <Badge className="bg-green-100 text-green-800 border-green-300">Approved</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Pending</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Dialog open={isServiceDialogOpen && selectedService?.id === service.id} onOpenChange={(open) => {
+                            setIsServiceDialogOpen(open);
+                            if (!open) setSelectedService(null);
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedService(service);
+                                  setIsServiceDialogOpen(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Review
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              {selectedService && (
+                                <>
+                                  <DialogHeader>
+                                    <DialogTitle>Review Service</DialogTitle>
+                                    <DialogDescription>
+                                      Approve or reject this service listing
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="grid gap-4 py-4">
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Service Name:</p>
+                                      <p className="col-span-3">{selectedService.name}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Vendor:</p>
+                                      <p className="col-span-3">{selectedService.vendorName}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Price:</p>
+                                      <p className="col-span-3">₱{selectedService.price?.toLocaleString()}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-center gap-4">
+                                      <p className="font-medium">Description:</p>
+                                      <p className="col-span-3">{selectedService.description}</p>
+                                    </div>
+                                    <div className="grid grid-cols-4 items-start gap-4">
+                                      <p className="font-medium">Admin Comments:</p>
+                                      <div className="col-span-3">
+                                        <Textarea
+                                          placeholder="Add comments about this service (optional)"
+                                          className="min-h-[100px]"
+                                          value={adminComment}
+                                          onChange={(e) => setAdminComment(e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <DialogFooter className="flex-col sm:flex-row gap-2">
+                                    <Button 
+                                      variant="outline" 
+                                      className="border-green-500 text-green-700 hover:bg-green-50"
+                                      onClick={() => handleApproveService(selectedService.id)}
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      className="border-red-500 text-red-700 hover:bg-red-50"
+                                      onClick={() => handleRejectService(selectedService.id)}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </DialogFooter>
+                                </>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            onClick={() => handleDeleteService(service.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <p className="text-gray-500">No services found</p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Delete Service Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this service? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteService}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Booking Confirmation Dialog */}
+      <Dialog open={isDeleteBookingDialogOpen} onOpenChange={setIsDeleteBookingDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this booking? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteBookingDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteBooking}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminDashboard;
