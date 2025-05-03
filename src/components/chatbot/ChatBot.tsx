@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Message {
   id: string;
@@ -29,6 +30,7 @@ const ChatBot = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     scrollToBottom();
@@ -119,7 +121,9 @@ const ChatBot = () => {
       
       {/* Chat Window */}
       {isOpen && (
-        <div className="flex flex-col bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden w-80 md:w-96 transition-all duration-300 animate-fade-in">
+        <div className={`flex flex-col bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all duration-300 animate-fade-in ${
+          isMobile ? 'fixed inset-4 z-50 max-h-[calc(100vh-2rem)]' : 'w-80 md:w-96'
+        }`}>
           {/* Chat Header */}
           <div className="bg-gradient-to-r from-kasadya-purple to-purple-600 text-white px-4 py-3 flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -154,7 +158,7 @@ const ChatBot = () => {
           {/* Chat Messages */}
           {!isMinimized && (
             <>
-              <div className="flex-1 p-4 overflow-y-auto max-h-96 bg-gray-50">
+              <div className={`flex-1 p-4 overflow-y-auto bg-gray-50 ${isMobile ? 'max-h-[calc(100vh-11rem)]' : 'max-h-96'}`}>
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
