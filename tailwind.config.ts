@@ -54,13 +54,15 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				kasadya: {
-					teal: '#3EB7B0',     // The teal/turquoise color
-					brown: '#4A3418',    // The brown color
-					red: '#E14A2E',      // The red/coral color
-					gold: '#F7B731',     // The gold/yellow color
-					'deep-gold': '#D4A017', // Darker gold for contrast
-					'deep-teal': '#2C8A87', // Darker teal for hover effects
-					'deep-red': '#B93B25', // Darker red for hover effects
+					purple: '#9b87f5', // Added purple color for chatbot
+					'deep-purple': '#7E69AB', // Added deep purple for hover states
+					teal: '#3EB7B0',
+					brown: '#4A3418',
+					red: '#E14A2E',
+					gold: '#F7B731',
+					'deep-gold': '#D4A017',
+					'deep-teal': '#2C8A87',
+					'deep-red': '#B93B25',
 					neutral: '#8E9196',
 					'light-gray': '#F8F9FA'
 				},
@@ -118,7 +120,7 @@ export default {
 					'50%': { transform: 'translateY(-5px)' }
 				},
 				'pulse-subtle': {
-					'0%, 100%': { opacity: '1' },
+					'0%': { opacity: '1' },
 					'50%': { opacity: '0.8' }
 				}
 			},

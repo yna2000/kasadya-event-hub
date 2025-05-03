@@ -111,7 +111,7 @@ const ChatBot = () => {
       {!isOpen && (
         <Button 
           onClick={toggleChat} 
-          className="h-14 w-14 rounded-full shadow-lg bg-kasadya-purple hover:bg-kasadya-deep-purple"
+          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-kasadya-purple to-purple-600 hover:bg-purple-700 transition-all duration-300 animate-pulse-subtle"
         >
           <MessageSquare className="h-6 w-6" />
         </Button>
@@ -119,18 +119,23 @@ const ChatBot = () => {
       
       {/* Chat Window */}
       {isOpen && (
-        <div className="flex flex-col bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden w-80 md:w-96">
+        <div className="flex flex-col bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden w-80 md:w-96 transition-all duration-300 animate-fade-in">
           {/* Chat Header */}
-          <div className="bg-kasadya-purple text-white px-4 py-3 flex justify-between items-center">
+          <div className="bg-gradient-to-r from-kasadya-purple to-purple-600 text-white px-4 py-3 flex justify-between items-center">
             <div className="flex items-center space-x-2">
-              <Bot className="h-6 w-6" />
-              <h3 className="font-medium">Kasadya Support</h3>
+              <div className="bg-white p-1 rounded-full">
+                <Bot className="h-5 w-5 text-kasadya-purple" />
+              </div>
+              <div>
+                <h3 className="font-medium">Kasadya Support</h3>
+                <p className="text-xs opacity-75">We typically reply in a few minutes</p>
+              </div>
             </div>
             <div className="flex items-center space-x-1">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 text-white hover:bg-kasadya-deep-purple rounded-full"
+                className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
                 onClick={toggleMinimize}
               >
                 {isMinimized ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -138,7 +143,7 @@ const ChatBot = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 text-white hover:bg-kasadya-deep-purple rounded-full"
+                className="h-8 w-8 text-white hover:bg-white/20 rounded-full"
                 onClick={toggleChat}
               >
                 <X className="h-5 w-5" />
@@ -153,15 +158,20 @@ const ChatBot = () => {
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex mb-3 ${
+                    className={`flex mb-4 ${
                       msg.sender === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
+                    {msg.sender === 'bot' && (
+                      <Avatar className="h-8 w-8 mr-2 bg-kasadya-purple text-white flex items-center justify-center">
+                        <Bot className="h-4 w-4" />
+                      </Avatar>
+                    )}
                     <div
-                      className={`max-w-[80%] px-4 py-2 rounded-lg ${
+                      className={`max-w-[80%] px-4 py-2 rounded-2xl shadow-sm ${
                         msg.sender === 'user'
-                          ? 'bg-kasadya-purple text-white rounded-br-none'
-                          : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                          ? 'bg-gradient-to-r from-kasadya-purple to-purple-600 text-white rounded-br-none'
+                          : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none'
                       }`}
                     >
                       <p className="text-sm">{msg.content}</p>
@@ -169,6 +179,11 @@ const ChatBot = () => {
                         {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
+                    {msg.sender === 'user' && (
+                      <Avatar className="h-8 w-8 ml-2 bg-gray-300 text-gray-700 flex items-center justify-center">
+                        <span className="text-xs font-medium">You</span>
+                      </Avatar>
+                    )}
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
@@ -182,11 +197,11 @@ const ChatBot = () => {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="flex-1"
+                  className="flex-1 border-gray-300 focus:border-kasadya-purple focus:ring-kasadya-purple"
                 />
                 <Button
                   onClick={handleSendMessage}
-                  className="ml-2 bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                  className="ml-2 bg-gradient-to-r from-kasadya-purple to-purple-600 hover:opacity-90 transition-opacity"
                   size="icon"
                 >
                   <Send className="h-4 w-4" />
