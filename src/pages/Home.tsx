@@ -12,6 +12,16 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { useEffect, useState } from 'react';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Progress } from "@/components/ui/progress";
 
 const Home = () => {
   // Featured service categories
@@ -95,49 +105,165 @@ const Home = () => {
     },
   ];
 
+  // Featured event images - improved with accurate event pictures
+  const eventSlides = [
+    {
+      title: "Elegant Wedding Reception",
+      description: "Luxurious wedding venue with perfect ambiance",
+      image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&auto=format&fit=crop&w=1400&q=80",
+    },
+    {
+      title: "Corporate Conference",
+      description: "Professional setup for business events and meetings",
+      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?ixlib=rb-4.0.3&auto=format&fit=crop&w=1400&q=80",
+    },
+    {
+      title: "Birthday Celebration",
+      description: "Creative themes and decorations for all ages",
+      image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1400&q=80",
+    },
+    {
+      title: "Live Entertainment",
+      description: "Top-quality performers for any occasion",
+      image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=1400&q=80",
+    },
+    {
+      title: "Catering Excellence",
+      description: "Delicious food presentations for your events",
+      image: "https://images.unsplash.com/photo-1555244162-803834f70033?ixlib=rb-4.0.3&auto=format&fit=crop&w=1400&q=80",
+    },
+  ];
+
   // Blog posts (featured)
   const blogPosts = [
     {
       title: "Top 10 Wedding Venues in Davao del Norte",
       excerpt: "Discover the most beautiful and sought-after wedding venues in the region...",
-      image: "https://images.unsplash.com/photo-1466721591366-2d5fba72006d?ixlib=rb-4.0.3",
+      image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3",
       date: "April 2, 2023"
     },
     {
       title: "Planning the Perfect Birthday Party on a Budget",
       excerpt: "Learn how to create memorable celebrations without breaking the bank...",
-      image: "https://images.unsplash.com/photo-1500673922987-e212871fec22?ixlib=rb-4.0.3",
+      image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?ixlib=rb-4.0.3",
       date: "March 15, 2023"
     },
     {
       title: "Corporate Event Trends for 2023",
       excerpt: "Stay ahead of the curve with these innovative corporate event ideas...",
-      image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3",
+      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?ixlib=rb-4.0.3",
       date: "February 28, 2023"
     }
   ];
 
+  // Auto slide functionality
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [slidingProgress, setSlidingProgress] = useState(0);
+  const slideInterval = 10000; // 10 seconds per slide
+
+  useEffect(() => {
+    const slideTimer = setInterval(() => {
+      setCurrentSlide((prevSlide) => (prevSlide + 1) % eventSlides.length);
+      setSlidingProgress(0);
+    }, slideInterval);
+
+    const progressTimer = setInterval(() => {
+      setSlidingProgress((prev) => {
+        const increment = 100 / (slideInterval / 100);
+        return Math.min(prev + increment, 100);
+      });
+    }, 100);
+
+    return () => {
+      clearInterval(slideTimer);
+      clearInterval(progressTimer);
+    };
+  }, [eventSlides.length]);
+
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-gray-900 to-gray-800 text-white">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1472396961693-142e6e269027?ixlib=rb-4.0.3')] bg-cover bg-center mix-blend-overlay opacity-70"></div>
-        <div className="container mx-auto px-4 py-20 md:py-32 relative z-10">
-          <div className="max-w-3xl animate-fade-in">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 font-playfair">
-              Connecting You with the Best Event Services in Davao del Norte
-            </h1>
-            <p className="text-xl mb-8 text-gray-200">
-              Find the perfect services and vendors to make your special occasions truly memorable.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button asChild size="lg" className="bg-kasadya-teal hover:bg-kasadya-deep-teal">
-                <Link to="/services">Get Started</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="bg-transparent text-white border-white hover:bg-white/10">
-                <Link to="/vendors">Browse Vendors</Link>
-              </Button>
+      {/* Hero Section with auto sliding carousel */}
+      <section className="relative">
+        <div className="hidden md:block">
+          <AspectRatio ratio={16 / 6} className="bg-black">
+            <div className="absolute inset-0">
+              {eventSlides.map((slide, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 transition-opacity duration-1000 ${
+                    index === currentSlide ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  <img
+                    src={slide.image}
+                    alt={slide.title}
+                    className="w-full h-full object-cover"
+                    style={{ opacity: 0.7 }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 to-gray-800/50"></div>
+                </div>
+              ))}
+              <div className="absolute inset-0 flex items-center">
+                <div className="container mx-auto px-4">
+                  <div className="max-w-3xl animate-fade-in">
+                    <h1 className="text-4xl md:text-6xl font-bold mb-4 font-playfair text-white">
+                      Connecting You with the Best Event Services in Davao del Norte
+                    </h1>
+                    <p className="text-xl mb-8 text-gray-200">
+                      Find the perfect services and vendors to make your special occasions truly memorable.
+                    </p>
+                    <div className="flex flex-wrap gap-4">
+                      <Button asChild size="lg" className="bg-kasadya-teal hover:bg-kasadya-deep-teal">
+                        <Link to="/services">Get Started</Link>
+                      </Button>
+                      <Button asChild variant="outline" size="lg" className="bg-transparent text-white border-white hover:bg-white/10">
+                        <Link to="/vendors">Browse Vendors</Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </AspectRatio>
+          <div className="container mx-auto px-4 mt-2">
+            <Progress value={slidingProgress} className="h-1.5" />
+            <div className="flex justify-between mt-1 text-sm text-gray-600">
+              <span>{eventSlides[currentSlide].title}</span>
+              <span>{`${currentSlide + 1}/${eventSlides.length}`}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Hero */}
+        <div className="md:hidden relative bg-gradient-to-r from-gray-900 to-gray-800 text-white">
+          <div className="absolute inset-0">
+            <img
+              src={eventSlides[currentSlide].image}
+              alt={eventSlides[currentSlide].title}
+              className="w-full h-full object-cover opacity-60"
+            />
+            <div className="absolute inset-0 bg-black/40"></div>
+          </div>
+          <div className="container mx-auto px-4 py-16 relative z-10">
+            <div className="max-w-3xl animate-fade-in">
+              <h1 className="text-3xl font-bold mb-4 font-playfair">
+                Connecting You with the Best Event Services
+              </h1>
+              <p className="text-lg mb-6 text-gray-200">
+                Perfect services for your special occasions.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button asChild size="default" className="bg-kasadya-teal hover:bg-kasadya-deep-teal">
+                  <Link to="/services">Get Started</Link>
+                </Button>
+                <Button asChild variant="outline" size="default" className="bg-transparent text-white border-white hover:bg-white/10">
+                  <Link to="/vendors">Browse Vendors</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0">
+            <Progress value={slidingProgress} className="h-1" />
           </div>
         </div>
       </section>
@@ -146,7 +272,7 @@ const Home = () => {
       <section className="bg-white py-10">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-lg shadow-lg p-6 -mt-16 relative z-20">
+            <div className="bg-white rounded-lg shadow-lg p-6 -mt-8 md:-mt-16 relative z-20">
               <h2 className="text-2xl font-bold mb-4 text-center">Find the Perfect Service for Your Event</h2>
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-grow">
@@ -161,6 +287,46 @@ const Home = () => {
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Events Carousel */}
+      <section className="section-padding bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="section-title">Featured Events</h2>
+          <p className="section-subtitle">
+            Browse through our curated selection of recent events
+          </p>
+
+          <div className="mt-8">
+            <Carousel className="w-full max-w-5xl mx-auto">
+              <CarouselContent>
+                {eventSlides.map((slide, index) => (
+                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                    <div className="p-2">
+                      <Card className="overflow-hidden hover-lift">
+                        <AspectRatio ratio={4/3}>
+                          <img
+                            src={slide.image}
+                            alt={slide.title}
+                            className="object-cover w-full h-full"
+                          />
+                        </AspectRatio>
+                        <CardContent className="p-4">
+                          <h3 className="font-bold text-lg">{slide.title}</h3>
+                          <p className="text-gray-600 text-sm">{slide.description}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <div className="hidden md:flex justify-end gap-2 mt-4">
+                <CarouselPrevious className="static translate-y-0 ml-0" />
+                <CarouselNext className="static translate-y-0 mr-0" />
+              </div>
+            </Carousel>
           </div>
         </div>
       </section>
@@ -233,12 +399,14 @@ const Home = () => {
               </Button>
             </div>
             
-            <div className="hidden md:block rounded-lg overflow-hidden shadow-xl">
-              <img 
-                src="https://images.unsplash.com/photo-1466721591366-2d5fba72006d?ixlib=rb-4.0.3" 
-                alt="Celebration event" 
-                className="w-full h-full object-cover"
-              />
+            <div className="rounded-lg overflow-hidden shadow-xl">
+              <AspectRatio ratio={4/3}>
+                <img 
+                  src="https://images.unsplash.com/photo-1511578314322-379afb476865?ixlib=rb-4.0.3" 
+                  alt="Celebration event" 
+                  className="w-full h-full object-cover"
+                />
+              </AspectRatio>
             </div>
           </div>
         </div>
@@ -277,13 +445,13 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {blogPosts.map((post, index) => (
               <Card key={index} className="overflow-hidden hover-lift h-full">
-                <div className="h-48 overflow-hidden">
+                <AspectRatio ratio={16/9}>
                   <img 
                     src={post.image} 
                     alt={post.title} 
                     className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
                   />
-                </div>
+                </AspectRatio>
                 <CardContent className="p-6">
                   <p className="text-sm text-gray-500 mb-2">{post.date}</p>
                   <h3 className="text-xl font-bold mb-2">{post.title}</h3>
