@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNotifications } from './NotificationContext';
@@ -16,8 +17,10 @@ export interface Booking {
   time: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   amount: number;
+  amountPaid?: number;
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   paymentMethod?: 'gcash' | 'maya' | 'bank' | 'cash';
+  paymentDate?: string;
   notes: string;
   createdAt: string;
   // Properties needed by AdminDashboard
@@ -38,10 +41,11 @@ interface BookingContextType {
   getBookingsByDate: (dateStr: string) => Booking[];
   isDateAvailable: (dateStr: string, vendorId?: string) => boolean;
   updateBookingStatus: (bookingId: string, status: Booking['status']) => void;
-  updatePaymentStatus: (bookingId: string, paymentStatus: Booking['paymentStatus']) => void;
+  updatePaymentStatus: (bookingId: string, paymentStatus: Booking['paymentStatus'], paymentMethod?: Booking['paymentMethod']) => void;
   cancelBooking: (bookingId: string) => void;
   processPayment: (bookingId: string, amount: number, paymentMethod: Booking['paymentMethod']) => Promise<boolean>;
   fetchBookings: () => void;
+  getBookingById: (bookingId: string) => Booking | undefined;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -76,6 +80,10 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
     if (storedBookings) {
       setBookings(JSON.parse(storedBookings));
     }
+  };
+
+  const getBookingById = (bookingId: string) => {
+    return bookings.find(booking => booking.id === bookingId);
   };
 
   const getBookedDates = () => {
@@ -132,18 +140,28 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       // Simulate payment processing delay
       await new Promise(resolve => setTimeout(resolve, 2000));
 
+      // Calculate amount already paid (if any)
+      const previouslyPaid = booking.amountPaid || 0;
+      const newTotalPaid = previouslyPaid + amount;
+      
       // Determine the new payment status
       let newPaymentStatus: Booking['paymentStatus'] = 'unpaid';
-      if (amount >= booking.amount) {
+      if (newTotalPaid >= booking.amount) {
         newPaymentStatus = 'paid';
-      } else if (amount > 0) {
+      } else if (newTotalPaid > 0) {
         newPaymentStatus = 'partial';
       }
 
       // Update the booking
       setBookings(prev =>
         prev.map(b =>
-          b.id === bookingId ? { ...b, paymentStatus: newPaymentStatus, paymentMethod } : b
+          b.id === bookingId ? { 
+            ...b, 
+            paymentStatus: newPaymentStatus, 
+            paymentMethod,
+            amountPaid: newTotalPaid,
+            paymentDate: new Date().toISOString()
+          } : b
         )
       );
 
@@ -248,13 +266,31 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const updatePaymentStatus = (bookingId: string, paymentStatus: Booking['paymentStatus']) => {
+  const updatePaymentStatus = (bookingId: string, paymentStatus: Booking['paymentStatus'], paymentMethod?: Booking['paymentMethod']) => {
     const booking = bookings.find(b => b.id === bookingId);
     if (!booking) return;
 
+    const updates: Partial<Booking> = { paymentStatus };
+    
+    // If paymentMethod is provided, update it
+    if (paymentMethod) {
+      updates.paymentMethod = paymentMethod;
+    }
+    
+    // If marked as paid and there's no amountPaid set, set it to the full amount
+    if (paymentStatus === 'paid' && !booking.amountPaid) {
+      updates.amountPaid = booking.amount;
+    }
+    
+    // If marked as unpaid, reset amountPaid
+    if (paymentStatus === 'unpaid') {
+      updates.amountPaid = 0;
+    }
+    
+    // Update the booking with all changes
     setBookings(prev =>
       prev.map(b =>
-        b.id === bookingId ? { ...b, paymentStatus } : b
+        b.id === bookingId ? { ...b, ...updates } : b
       )
     );
 
@@ -311,6 +347,7 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       cancelBooking,
       processPayment,
       fetchBookings,
+      getBookingById,
     }}>
       {children}
     </BookingContext.Provider>
