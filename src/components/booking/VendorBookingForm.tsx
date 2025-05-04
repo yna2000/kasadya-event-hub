@@ -16,11 +16,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Shield, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, Shield, Info, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 
 const bookingSchema = z.object({
   date: z.date({
@@ -56,6 +57,7 @@ const VendorBookingForm = ({
   const { user } = useAuth();
   const { isDateAvailable } = useBooking();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingProgress, setBookingProgress] = useState(25);
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -86,6 +88,9 @@ const VendorBookingForm = ({
       return;
     }
 
+    // Update booking progress
+    setBookingProgress(50);
+
     // If we have an onSubmit callback, call it with the form data
     if (onSubmit) {
       onSubmit(data);
@@ -94,10 +99,24 @@ const VendorBookingForm = ({
     setIsSubmitting(false);
   };
 
+  // Available time slots
+  const timeSlots = [];
+  for (let hour = 8; hour <= 20; hour++) {
+    const hourFormat = hour > 12 ? (hour - 12) : hour;
+    const amPm = hour >= 12 ? 'PM' : 'AM';
+    timeSlots.push(`${hourFormat}:00 ${amPm}`);
+    if (hour < 20) {
+      timeSlots.push(`${hourFormat}:30 ${amPm}`);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="mb-4">
-        <div className="flex items-center mb-2">
+        <Progress value={bookingProgress} className="h-2 mb-2" />
+        <p className="text-sm text-muted-foreground text-center">Booking Progress</p>
+        
+        <div className="flex items-center mb-2 mt-4">
           <div className="w-12 h-12 rounded-full overflow-hidden mr-3">
             <img src={vendor.image} alt={vendor.name} className="w-full h-full object-cover" />
           </div>
@@ -167,7 +186,18 @@ const VendorBookingForm = ({
               <FormItem>
                 <FormLabel>Time</FormLabel>
                 <FormControl>
-                  <Input type="time" {...field} />
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    {...field}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Select a time</option>
+                    {timeSlots.map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                  </select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -206,7 +236,7 @@ const VendorBookingForm = ({
               className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Processing...' : 'Continue'}
+              {isSubmitting ? 'Processing...' : 'Continue to Payment'}
             </Button>
           </div>
         </form>
