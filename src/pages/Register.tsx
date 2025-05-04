@@ -128,7 +128,11 @@ const Register = () => {
       );
       
       if (success) {
-        navigate('/dashboard'); // Redirect all users to dashboard after registration
+        // Show a verification message before redirecting
+        setShowVerificationInfo(true);
+        setTimeout(() => {
+          navigate('/dashboard'); // Redirect all users to dashboard after registration
+        }, 1500);
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -240,7 +244,7 @@ const Register = () => {
                     <h3 className="text-sm font-semibold text-blue-700">ID Verification Required</h3>
                     <p className="text-xs text-blue-600 mt-1">
                       For security purposes, we require ID verification for all users.
-                      Your information is encrypted and stored securely.
+                      Your information will be reviewed by our admins before approval.
                     </p>
                   </div>
                 </div>
