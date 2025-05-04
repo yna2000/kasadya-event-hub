@@ -23,8 +23,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { AlertCircle, Shield, Package, User, UserCheck } from 'lucide-react';
+import { AlertCircle, Shield, Package, User, UserCheck, CheckCircle2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -39,6 +40,7 @@ const registerSchema = z.object({
   }),
   idNumber: z.string().min(5, { message: 'ID number must be at least 5 characters' }),
   businessType: z.string().optional(),
+  additionalInfo: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -58,6 +60,7 @@ const Register = () => {
   const [error, setError] = useState<string | null>(null);
   const [showBusinessType, setShowBusinessType] = useState(false);
   const [formProgress, setFormProgress] = useState(10);
+  const [showVerificationInfo, setShowVerificationInfo] = useState(false);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -70,6 +73,7 @@ const Register = () => {
       idType: 'national_id',
       idNumber: '',
       businessType: '',
+      additionalInfo: '',
     },
   });
 
@@ -79,6 +83,7 @@ const Register = () => {
 
   useEffect(() => {
     setShowBusinessType(role === 'vendor');
+    setShowVerificationInfo(true);
     
     // Calculate form completion percentage
     let filledFields = 0;
@@ -96,6 +101,12 @@ const Register = () => {
     if (role === 'vendor') {
       totalFields++;
       if (formValues.businessType) filledFields++;
+    }
+    
+    // Add additional info to calculation if it's filled
+    if (formValues.additionalInfo && formValues.additionalInfo.trim() !== '') {
+      totalFields++;
+      filledFields++;
     }
     
     const progress = Math.floor((filledFields / totalFields) * 100);
@@ -140,6 +151,21 @@ const Register = () => {
             </div>
             <Progress value={formProgress} className="h-2" />
           </div>
+
+          {showVerificationInfo && (
+            <div className="bg-amber-50 p-4 rounded-md mb-4 text-sm">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div>
+                  <h3 className="font-medium text-amber-800">Verification Required</h3>
+                  <p className="text-amber-700 mt-1">
+                    All accounts require admin verification before you can book or offer services. 
+                    Please complete the registration with accurate information.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 flex items-center gap-2">
@@ -338,6 +364,26 @@ const Register = () => {
                   )}
                 />
               )}
+
+              <FormField
+                control={form.control}
+                name="additionalInfo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Information (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Any additional information you'd like to share with the admin for verification"
+                        className="min-h-[100px]" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      This information can help speed up your verification process.
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
 
               <Button 
                 type="submit" 

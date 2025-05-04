@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from '@/hooks/use-toast';
 
@@ -34,6 +33,8 @@ interface AuthContextType {
   ) => Promise<boolean>;
   logout: () => void;
   verifyUser: (userId: string, isVerified: boolean) => Promise<boolean>;
+  getAllUsers: () => UserType[];
+  getPendingVerificationUsers: () => UserType[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -273,12 +274,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Get all users from localStorage (for admin purposes)
+  const getAllUsers = (): UserType[] => {
+    const storedUsers = localStorage.getItem('users');
+    if (storedUsers) {
+      const users: any[] = JSON.parse(storedUsers);
+      
+      // Remove password field from each user
+      return users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+    }
+    return [];
+  };
+
+  // Get users pending verification
+  const getPendingVerificationUsers = (): UserType[] => {
+    const allUsers = getAllUsers();
+    return allUsers.filter(user => user.isVerified === false);
+  };
+
   const verifyUser = async (userId: string, isVerified: boolean): Promise<boolean> => {
     try {
-      // In a real app, this would be an API call
-      // For demo, we'll use local storage and simulate a network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       // Get users from localStorage
       const storedUsers = localStorage.getItem('users') || '[]';
       const users = JSON.parse(storedUsers);
@@ -308,9 +326,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
       
+      // Create notification for the verified user
+      createNotification(
+        userId,
+        isVerified ? "Account Verified" : "Account Verification Update",
+        isVerified ? "Your account has been verified. You can now access all features." : "Your account verification status has been updated.",
+        "system"
+      );
+      
+      toast({
+        title: "User verification updated",
+        description: `User ${isVerified ? "verified" : "verification removed"} successfully.`
+      });
+      
       return true;
     } catch (error) {
       console.error('User verification error:', error);
+      toast({
+        title: "Verification error",
+        description: "An unexpected error occurred during verification.",
+        variant: "destructive"
+      });
       return false;
     }
   };
@@ -333,7 +369,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       login,
       register,
       logout,
-      verifyUser
+      verifyUser,
+      getAllUsers,
+      getPendingVerificationUsers
     }}>
       {children}
     </AuthContext.Provider>
