@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { AlertCircle, Shield, Package } from 'lucide-react';
+import { AlertCircle, Shield, Package, User, UserCheck } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -55,6 +57,7 @@ const Register = () => {
   const { register: registerUser, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [showBusinessType, setShowBusinessType] = useState(false);
+  const [formProgress, setFormProgress] = useState(10);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -72,10 +75,32 @@ const Register = () => {
 
   // Watch for role changes to toggle business type field
   const role = form.watch('role');
+  const formValues = form.watch();
 
   useEffect(() => {
     setShowBusinessType(role === 'vendor');
-  }, [role]);
+    
+    // Calculate form completion percentage
+    let filledFields = 0;
+    let totalFields = 7; // Base fields
+    
+    if (formValues.name) filledFields++;
+    if (formValues.email) filledFields++;
+    if (formValues.password) filledFields++;
+    if (formValues.confirmPassword) filledFields++;
+    if (formValues.role) filledFields++;
+    if (formValues.idType) filledFields++;
+    if (formValues.idNumber) filledFields++;
+    
+    // Add business type field to total if role is vendor
+    if (role === 'vendor') {
+      totalFields++;
+      if (formValues.businessType) filledFields++;
+    }
+    
+    const progress = Math.floor((filledFields / totalFields) * 100);
+    setFormProgress(progress < 10 ? 10 : progress); // Minimum 10% progress
+  }, [formValues, role]);
 
   const onSubmit = async (data: RegisterFormData) => {
     setError(null);
@@ -92,11 +117,7 @@ const Register = () => {
       );
       
       if (success) {
-        if (data.role === 'vendor') {
-          navigate('/post-service'); // Redirect vendors to post service
-        } else {
-          navigate('/dashboard'); // Redirect customers to dashboard
-        }
+        navigate('/dashboard'); // Redirect all users to dashboard after registration
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -107,14 +128,23 @@ const Register = () => {
     <div className="bg-gray-50 py-16">
       <div className="container mx-auto px-4 max-w-md">
         <div className="bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-3xl font-bold text-center mb-6">Create an Account</h1>
-          <p className="text-gray-600 text-center mb-8">
+          <h1 className="text-3xl font-bold text-center mb-2">Create an Account</h1>
+          <p className="text-gray-600 text-center mb-6">
             Join Kasadya Marketplace and discover the best services for your events
           </p>
+          
+          <div className="mb-6">
+            <div className="flex justify-between text-sm mb-1">
+              <span>Registration progress</span>
+              <span>{formProgress}%</span>
+            </div>
+            <Progress value={formProgress} className="h-2" />
+          </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
-              {error}
+            <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -247,7 +277,8 @@ const Register = () => {
                         <SelectItem value="vendor">Vendor offering services</SelectItem>
                       </SelectContent>
                     </Select>
-                    {role === 'vendor' && (
+                    
+                    {role === 'vendor' ? (
                       <div className="mt-2 p-3 bg-purple-50 rounded-md border border-purple-100">
                         <div className="flex items-start gap-2">
                           <Package className="h-4 w-4 text-purple-500 mt-0.5" />
@@ -256,7 +287,17 @@ const Register = () => {
                           </p>
                         </div>
                       </div>
+                    ) : (
+                      <div className="mt-2 p-3 bg-green-50 rounded-md border border-green-100">
+                        <div className="flex items-start gap-2">
+                          <UserCheck className="h-4 w-4 text-green-500 mt-0.5" />
+                          <p className="text-xs text-green-700">
+                            As a customer, your account will need approval before you can book services. This helps ensure a secure marketplace for everyone.
+                          </p>
+                        </div>
+                      </div>
                     )}
+                    
                     <FormMessage />
                   </FormItem>
                 )}

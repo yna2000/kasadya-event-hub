@@ -39,6 +39,8 @@ const AppRoutes = () => {
         <Route path="/booking-calendar" element={<BookingCalendar />} />
         <Route path="/admin/booking-calendar" element={<AdminBookingCalendar />} />
         <Route path="/post-service" element={<ServicePostingPage />} />
+        <Route path="/admin/users" element={<AdminDashboard />} />
+        <Route path="/admin/verification" element={<AdminDashboard />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Route>

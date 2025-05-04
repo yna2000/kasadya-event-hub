@@ -202,7 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         idType,
         idNumber,
         businessType: role === 'vendor' ? businessType : undefined, // Only set business type for vendors
-        isVerified: role === 'vendor' ? false : true, // Vendors need verification, customers don't
+        isVerified: role === 'vendor' ? false : false, // Both vendors and customers need verification now
         isAdmin: false, // Default to non-admin
         isVendor: role === 'vendor', // Set isVendor based on role
         createdAt: new Date().toISOString(),
@@ -223,7 +223,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Create a welcome notification with appropriate message based on role
       const notificationMessage = role === 'vendor' 
         ? `Thank you for registering, ${name}! Your ID verification is pending admin approval. Once approved, you can start posting services.`
-        : `Thank you for registering, ${name}! Welcome to Kasadya Marketplace.`;
+        : `Thank you for registering, ${name}! Your account is pending admin approval. Once approved, you can start booking services.`;
         
       createNotification(
         userWithoutPassword.id,
@@ -232,11 +232,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         'system'
       );
       
+      // Create admin notification about new user
+      const storedAdminNotifications = localStorage.getItem('adminNotifications') || '[]';
+      const adminNotifications = JSON.parse(storedAdminNotifications);
+      
+      const newAdminNotification = {
+        id: `admin-notif-${Math.random().toString(36).substring(2, 9)}`,
+        title: `New ${role} Registration`,
+        message: `${name} has registered as a ${role} and requires verification.`,
+        userId: userWithoutPassword.id,
+        userRole: role,
+        userName: name,
+        userEmail: email,
+        createdAt: new Date().toISOString(),
+        read: false
+      };
+      
+      adminNotifications.push(newAdminNotification);
+      localStorage.setItem('adminNotifications', JSON.stringify(adminNotifications));
+      
       toast({
         title: "Registration successful",
         description: role === 'vendor' 
           ? "Welcome to Kasadya Marketplace! Your account is pending ID verification."
-          : "Welcome to Kasadya Marketplace!"
+          : "Welcome to Kasadya Marketplace! Your account is pending verification."
       });
       
       setIsLoading(false);
