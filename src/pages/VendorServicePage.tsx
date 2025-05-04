@@ -1,11 +1,29 @@
+
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import VendorBookingForm from '@/components/booking/VendorBookingForm';
-import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
+import BookingTerms from '@/components/booking/BookingTerms';
+import { EnhancedPaymentMethodSelection } from '@/components/booking/EnhancedPaymentMethodSelection';
+import BookingConfirmation from '@/components/booking/BookingConfirmation';
+import { BookingSteps } from '@/components/booking/BookingSteps';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, MapPin, Phone, Star, User, Package } from 'lucide-react';
+import { 
+  Calendar, Clock, MapPin, Phone, Star, 
+  User, Package, Shield, AlertTriangle
+} from 'lucide-react';
+import { 
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBooking } from '@/contexts/BookingContext';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data - in a real app this would come from an API
 const vendors = [
@@ -47,13 +65,22 @@ const vendors = [
   }
 ];
 
+// Define types for our booking steps
+type BookingStep = 'details' | 'terms' | 'verification' | 'payment' | 'confirmation';
+
 const VendorServicePage = () => {
   const { vendorId } = useParams<{ vendorId: string }>();
   const [vendor, setVendor] = useState<any>(null);
   const [vendorServices, setVendorServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<any>(null);
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [showBookingSheet, setShowBookingSheet] = useState(false);
+  const [bookingStep, setBookingStep] = useState<BookingStep>('details');
+  const [bookingDetails, setBookingDetails] = useState<any>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+  const { user } = useAuth();
+  const { createBooking } = useBooking();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
   useEffect(() => {
     // In real app, fetch vendor from API
@@ -93,20 +120,93 @@ const VendorServicePage = () => {
   }
 
   const handleBookNow = () => {
-    // Check if terms were already accepted
-    const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
-    if (termsAccepted) {
-      // If terms were accepted, open booking form directly
-      setShowBookingForm(true);
-    } else {
-      // Otherwise, show terms modal first
-      setIsTermsModalOpen(true);
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to book this vendor",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
     }
+    setBookingStep('details');
+    setShowBookingSheet(true);
   };
 
+  const handleBookingDetailsSubmit = (data: any) => {
+    setBookingDetails(data);
+    setBookingStep('terms');
+  };
+  
   const handleAcceptTerms = () => {
-    setIsTermsModalOpen(false);
-    setShowBookingForm(true);
+    setBookingStep('verification');
+  };
+  
+  const handleVerificationComplete = () => {
+    setBookingStep('payment');
+  };
+  
+  const handlePaymentMethodSelected = (method: string) => {
+    setSelectedPaymentMethod(method);
+  };
+  
+  const handlePaymentContinue = () => {
+    // Process the payment
+    if (bookingDetails && selectedService) {
+      try {
+        // In a real app, the amount would be calculated based on the service
+        const amount = selectedService.price || Math.floor(Math.random() * 500) + 100;
+        
+        const newBookingData = {
+          vendorId: vendor.id,
+          vendorName: vendor.name,
+          userId: user?.id || '',
+          serviceId: selectedService.id,
+          serviceName: selectedService.name,
+          serviceDescription: selectedService.description,
+          date: bookingDetails.date,
+          time: bookingDetails.time,
+          amount: amount,
+          notes: bookingDetails.notes || '',
+          // Add the missing properties required by the Booking interface
+          name: user?.name || '',
+          email: user?.email || '',
+          roomType: selectedService.name,
+          checkInDate: bookingDetails.date,
+          checkOutDate: bookingDetails.date,
+          totalPrice: amount,
+        };
+        
+        createBooking(newBookingData).then((booking) => {
+          // Update bookingDetails with the new booking ID and other details
+          setBookingDetails({
+            ...bookingDetails,
+            bookingId: booking.id,
+            vendorName: vendor.name,
+            serviceName: selectedService.name,
+            amount: amount,
+            paymentMethod: selectedPaymentMethod,
+            userName: user?.name,
+            location: vendor.location,
+          });
+          
+          // Move to confirmation step
+          setBookingStep('confirmation');
+        });
+      } catch (error) {
+        console.error('Error creating booking:', error);
+        toast({
+          title: "Booking Failed",
+          description: error instanceof Error ? error.message : "An unexpected error occurred.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+  
+  const handleDone = () => {
+    setShowBookingSheet(false);
+    navigate('/dashboard');
   };
 
   return (
@@ -224,7 +324,7 @@ const VendorServicePage = () => {
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <div className="text-xl font-bold text-kasadya-purple mb-2">
-                                    ₱{service.price.toLocaleString()}
+                                    ₱{service.price?.toLocaleString() || 'Contact for price'}
                                   </div>
                                   <Button 
                                     className="w-full md:w-auto bg-kasadya-purple hover:bg-kasadya-deep-purple"
@@ -306,34 +406,128 @@ const VendorServicePage = () => {
                     Book This Vendor
                   </Button>
                 </div>
+                
+                <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
+                  <Shield size={15} />
+                  <span>Secure booking process</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Terms and Conditions Modal */}
-      <TermsAndConditionsModal
-        isOpen={isTermsModalOpen}
-        onClose={() => setIsTermsModalOpen(false)}
-        onAccept={handleAcceptTerms}
-      />
-      
-      {/* Booking Form */}
-      {showBookingForm && (
-        <VendorBookingForm
-          isOpen={showBookingForm}
-          onClose={() => setShowBookingForm(false)}
-          vendor={{
-            id: vendor.id,
-            name: vendor.name,
-            category: vendor.category,
-            location: vendor.location,
-            image: vendor.portfolio[0]
-          }}
-          service={selectedService ? selectedService.name : vendor.category}
-        />
-      )}
+      {/* Booking Sheet */}
+      <Sheet open={showBookingSheet} onOpenChange={setShowBookingSheet}>
+        <SheetContent className="sm:max-w-[600px] overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="text-2xl">Book {vendor?.name}</SheetTitle>
+            <SheetDescription>
+              {selectedService ? selectedService.name : vendor?.category}
+            </SheetDescription>
+          </SheetHeader>
+          
+          <BookingSteps currentStep={bookingStep} className="mb-6" />
+          
+          {bookingStep === 'details' && (
+            <VendorBookingForm
+              isOpen={true}
+              onClose={() => setShowBookingSheet(false)}
+              vendor={{
+                id: vendor.id,
+                name: vendor.name,
+                category: vendor.category,
+                location: vendor.location,
+                image: vendor.portfolio[0]
+              }}
+              service={selectedService ? selectedService.name : vendor.category}
+              onSubmit={handleBookingDetailsSubmit}
+            />
+          )}
+          
+          {bookingStep === 'terms' && (
+            <BookingTerms
+              onAccept={handleAcceptTerms}
+              onCancel={() => setShowBookingSheet(false)}
+              onBack={() => setBookingStep('details')}
+            />
+          )}
+          
+          {bookingStep === 'verification' && (
+            <div className="space-y-6">
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-md flex items-start space-x-3">
+                <AlertTriangle size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-amber-800">Verification Required</p>
+                  <p className="text-amber-700 text-sm">
+                    We've sent a verification code to your email address. Please enter it below to confirm your booking.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center space-y-6 py-4">
+                {/* This would be replaced with an actual OTP component in a real implementation */}
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5, 6].map((_, i) => (
+                    <div key={i} className="w-10 h-12 border-2 rounded flex items-center justify-center font-bold text-xl">
+                      {i === 0 ? '1' : i === 1 ? '2' : i === 2 ? '3' : i === 3 ? '4' : i === 4 ? '5' : '6'}
+                    </div>
+                  ))}
+                </div>
+                
+                <Button 
+                  className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                  onClick={handleVerificationComplete}
+                >
+                  Verify and Continue
+                </Button>
+                
+                <p className="text-sm text-gray-500 mt-4">
+                  Didn't receive a code? <Button variant="link" className="p-0 h-auto">Resend</Button>
+                </p>
+              </div>
+              
+              <div className="flex justify-between">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setBookingStep('terms')}
+                >
+                  Back
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowBookingSheet(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {bookingStep === 'payment' && (
+            <EnhancedPaymentMethodSelection
+              onSelectMethod={handlePaymentMethodSelected}
+              selectedMethod={selectedPaymentMethod}
+              onBack={() => setBookingStep('verification')}
+              onCancel={() => setShowBookingSheet(false)}
+              onContinue={handlePaymentContinue}
+            />
+          )}
+          
+          {bookingStep === 'confirmation' && bookingDetails && (
+            <BookingConfirmation
+              bookingDetails={bookingDetails}
+              onDone={handleDone}
+            />
+          )}
+          
+          <SheetFooter className="mt-6">
+            {/* Footer content will be handled by individual components */}
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };

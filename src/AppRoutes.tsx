@@ -18,6 +18,7 @@ import OtpVerification from "./pages/OtpVerification";
 import BookingCalendar from "./pages/BookingCalendar";
 import AdminBookingCalendar from "./pages/AdminBookingCalendar";
 import ServicePostingPage from "./pages/ServicePostingPage";
+import BookingTracker from "./pages/BookingTracker";
 
 const AppRoutes = () => {
   return (
@@ -41,6 +42,7 @@ const AppRoutes = () => {
         <Route path="/post-service" element={<ServicePostingPage />} />
         <Route path="/admin/users" element={<AdminDashboard />} />
         <Route path="/admin/verification" element={<AdminDashboard />} />
+        <Route path="/booking/:bookingId" element={<BookingTracker />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Route>
