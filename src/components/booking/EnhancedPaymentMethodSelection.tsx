@@ -1,9 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Banknote, CreditCard, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PaymentMethod {
   id: string;
@@ -62,138 +65,231 @@ export const EnhancedPaymentMethodSelection = ({
     }
   ];
 
+  const [amount, setAmount] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+
   // Make sure a payment method is selected before allowing to continue
   const handleContinue = () => {
     if (selectedMethod) {
+      if (selectedMethod === 'gcash' || selectedMethod === 'maya') {
+        setShowPaymentDetails(true);
+      } else {
+        onContinue();
+      }
+    }
+  };
+
+  const handleSubmitPayment = () => {
+    // Here we would validate inputs in a real system
+    if (selectedMethod && amount) {
       onContinue();
     }
   };
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-medium">Select Payment Method</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {paymentMethods.map((method) => (
-          <Card 
-            key={method.id}
-            className={cn(
-              "p-4 cursor-pointer transition-all border-2",
-              selectedMethod === method.id 
-                ? "border-kasadya-purple bg-purple-50" 
-                : "border-gray-200 hover:border-gray-300"
-            )}
-            onClick={() => onSelectMethod(method.id)}
-          >
-            <div className="flex items-center space-x-3">
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center text-white",
-                method.color
-              )}>
-                {method.logo ? (
-                  <img 
-                    src={method.logo} 
-                    alt={method.name} 
-                    className="w-6 h-6 object-contain"
-                  />
-                ) : (
-                  method.icon
+      {!showPaymentDetails ? (
+        <>
+          <h3 className="text-lg font-medium">Select Payment Method</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {paymentMethods.map((method) => (
+              <Card 
+                key={method.id}
+                className={cn(
+                  "p-4 cursor-pointer transition-all border-2",
+                  selectedMethod === method.id 
+                    ? "border-kasadya-purple bg-purple-50" 
+                    : "border-gray-200 hover:border-gray-300"
                 )}
-              </div>
-              <div>
-                <div className="font-medium">{method.name}</div>
-                <div className="text-sm text-gray-500">{method.description}</div>
-              </div>
-              {selectedMethod === method.id && (
-                <div className="ml-auto">
-                  <div className="w-4 h-4 rounded-full bg-kasadya-purple"></div>
+                onClick={() => onSelectMethod(method.id)}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center text-white",
+                    method.color
+                  )}>
+                    {method.logo ? (
+                      <img 
+                        src={method.logo} 
+                        alt={method.name} 
+                        className="w-6 h-6 object-contain"
+                      />
+                    ) : (
+                      method.icon
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-medium">{method.name}</div>
+                    <div className="text-sm text-gray-500">{method.description}</div>
+                  </div>
+                  {selectedMethod === method.id && (
+                    <div className="ml-auto">
+                      <div className="w-4 h-4 rounded-full bg-kasadya-purple"></div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </Card>
+            ))}
+          </div>
+          
+          <div className="pt-4 border-t mt-6">
+            <h4 className="text-sm font-medium mb-2">Payment Instructions:</h4>
+            {selectedMethod === 'gcash' && (
+              <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm">
+                <p className="font-medium">GCash Payment Instructions:</p>
+                <ol className="list-decimal ml-4 mt-2">
+                  <li>Open your GCash app</li>
+                  <li>Tap on 'Send Money'</li>
+                  <li>Enter recipient number: 09XX-XXX-XXXX</li>
+                  <li>Enter the exact amount</li>
+                  <li>Include your booking reference in the notes</li>
+                  <li>Take a screenshot of your payment confirmation</li>
+                </ol>
+              </div>
+            )}
+            {selectedMethod === 'maya' && (
+              <div className="bg-green-50 border border-green-200 rounded p-4 text-sm">
+                <p className="font-medium">Maya Payment Instructions:</p>
+                <ol className="list-decimal ml-4 mt-2">
+                  <li>Open your Maya app</li>
+                  <li>Select 'Send Money'</li>
+                  <li>Enter recipient account: kasadya@events.com</li>
+                  <li>Enter the exact amount</li>
+                  <li>Include your booking reference in the notes</li>
+                  <li>Submit your payment receipt</li>
+                </ol>
+              </div>
+            )}
+            {selectedMethod === 'bank' && (
+              <div className="bg-purple-50 border border-purple-200 rounded p-4 text-sm">
+                <p className="font-medium">Bank Transfer Instructions:</p>
+                <ol className="list-decimal ml-4 mt-2">
+                  <li>Transfer to our account:</li>
+                  <li>Bank: Kasadya Bank</li>
+                  <li>Account Number: 1234-5678-9012</li>
+                  <li>Account Name: Kasadya Events</li>
+                  <li>Include your booking reference in the notes</li>
+                  <li>Upload your payment slip</li>
+                </ol>
+              </div>
+            )}
+            {selectedMethod === 'cash' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm">
+                <p className="font-medium">Cash Payment Instructions:</p>
+                <ol className="list-decimal ml-4 mt-2">
+                  <li>Prepare the exact amount</li>
+                  <li>Pay on the event day or at our office</li>
+                  <li>A receipt will be provided</li>
+                  <li>Please note that a booking is only fully confirmed after payment</li>
+                </ol>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-between pt-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onBack}
+            >
+              Back
+            </Button>
+            <div>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onCancel}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleContinue}
+                disabled={!selectedMethod}
+                className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
+              >
+                Continue
+              </Button>
             </div>
-          </Card>
-        ))}
-      </div>
-      
-      <div className="pt-4 border-t mt-6">
-        <h4 className="text-sm font-medium mb-2">Payment Instructions:</h4>
-        {selectedMethod === 'gcash' && (
-          <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm">
-            <p className="font-medium">GCash Payment Instructions:</p>
-            <ol className="list-decimal ml-4 mt-2">
-              <li>Open your GCash app</li>
-              <li>Tap on 'Send Money'</li>
-              <li>Enter recipient number: 09XX-XXX-XXXX</li>
-              <li>Enter the exact amount</li>
-              <li>Include your booking reference in the notes</li>
-              <li>Take a screenshot of your payment confirmation</li>
-            </ol>
           </div>
-        )}
-        {selectedMethod === 'maya' && (
-          <div className="bg-green-50 border border-green-200 rounded p-4 text-sm">
-            <p className="font-medium">Maya Payment Instructions:</p>
-            <ol className="list-decimal ml-4 mt-2">
-              <li>Open your Maya app</li>
-              <li>Select 'Send Money'</li>
-              <li>Enter recipient account: kasadya@events.com</li>
-              <li>Enter the exact amount</li>
-              <li>Include your booking reference in the notes</li>
-              <li>Submit your payment receipt</li>
-            </ol>
+        </>
+      ) : (
+        <div className="space-y-6">
+          <h3 className="text-lg font-medium">Payment Details - {selectedMethod === 'gcash' ? 'GCash' : 'Maya'}</h3>
+          
+          <Alert className="bg-blue-50 border border-blue-200">
+            <AlertDescription className="text-blue-700">
+              Please fill in your payment details to proceed.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="amount">Amount to Pay (₱)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2">₱</span>
+                <Input 
+                  id="amount" 
+                  type="number" 
+                  className="pl-7" 
+                  placeholder="Enter amount" 
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="reference">Reference Number</Label>
+              <Input 
+                id="reference" 
+                placeholder="Enter reference number from your payment" 
+                value={referenceNumber}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                You can find this in your payment confirmation from {selectedMethod === 'gcash' ? 'GCash' : 'Maya'}.
+              </p>
+            </div>
+            
+            <div className="border-t pt-4 mt-4">
+              <p className="text-sm text-gray-700 mb-4">
+                By submitting, you confirm you've sent the payment through {selectedMethod === 'gcash' ? 'GCash' : 'Maya'}.
+              </p>
+            </div>
           </div>
-        )}
-        {selectedMethod === 'bank' && (
-          <div className="bg-purple-50 border border-purple-200 rounded p-4 text-sm">
-            <p className="font-medium">Bank Transfer Instructions:</p>
-            <ol className="list-decimal ml-4 mt-2">
-              <li>Transfer to our account:</li>
-              <li>Bank: Kasadya Bank</li>
-              <li>Account Number: 1234-5678-9012</li>
-              <li>Account Name: Kasadya Events</li>
-              <li>Include your booking reference in the notes</li>
-              <li>Upload your payment slip</li>
-            </ol>
+          
+          <div className="flex justify-between pt-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowPaymentDetails(false)}
+            >
+              Back
+            </Button>
+            <div>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onCancel}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button"
+                onClick={handleSubmitPayment}
+                disabled={!amount || !referenceNumber}
+                className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
+              >
+                Submit Payment
+              </Button>
+            </div>
           </div>
-        )}
-        {selectedMethod === 'cash' && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm">
-            <p className="font-medium">Cash Payment Instructions:</p>
-            <ol className="list-decimal ml-4 mt-2">
-              <li>Prepare the exact amount</li>
-              <li>Pay on the event day or at our office</li>
-              <li>A receipt will be provided</li>
-              <li>Please note that a booking is only fully confirmed after payment</li>
-            </ol>
-          </div>
-        )}
-      </div>
-      
-      <div className="flex justify-between pt-2">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={onBack}
-        >
-          Back
-        </Button>
-        <div>
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onCancel}
-            className="mr-2"
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="button" 
-            onClick={handleContinue}
-            disabled={!selectedMethod}
-            className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
-          >
-            Continue
-          </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

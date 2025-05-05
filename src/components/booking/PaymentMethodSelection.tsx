@@ -9,9 +9,14 @@ import { CreditCard, DollarSign, Building, Wallet } from 'lucide-react';
 interface PaymentMethodSelectionProps {
   selectedMethod: string;
   onMethodChange: (method: string) => void;
+  onContinue?: () => void;
 }
 
-const PaymentMethodSelection = ({ selectedMethod, onMethodChange }: PaymentMethodSelectionProps) => {
+const PaymentMethodSelection = ({ 
+  selectedMethod, 
+  onMethodChange,
+  onContinue 
+}: PaymentMethodSelectionProps) => {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Select Payment Method</h3>
@@ -105,6 +110,18 @@ const PaymentMethodSelection = ({ selectedMethod, onMethodChange }: PaymentMetho
           </CardContent>
         </Card>
       </RadioGroup>
+
+      {onContinue && (
+        <div className="mt-6">
+          <Button 
+            onClick={onContinue}
+            disabled={!selectedMethod}
+            className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
+          >
+            Continue with {selectedMethod ? selectedMethod.charAt(0).toUpperCase() + selectedMethod.slice(1) : 'Payment'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

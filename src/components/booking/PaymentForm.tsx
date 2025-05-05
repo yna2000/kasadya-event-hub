@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +17,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { useBooking } from '@/contexts/BookingContext';
 import { toast } from '@/hooks/use-toast';
 import { EnhancedPaymentMethodSelection } from './EnhancedPaymentMethodSelection';
-import { Check, CreditCard } from 'lucide-react';
+import { Check, CreditCard, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 interface PaymentFormProps {
@@ -313,7 +314,14 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                   className="flex-1 bg-kasadya-purple hover:bg-kasadya-deep-purple"
                   disabled={isProcessing}
                 >
-                  {isProcessing ? 'Processing Payment...' : `Pay Now`}
+                  {isProcessing ? (
+                    <div className="flex items-center">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </div>
+                  ) : (
+                    `Pay Now`
+                  )}
                 </Button>
               </div>
               
@@ -358,7 +366,15 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           <p className="text-lg font-semibold text-kasadya-purple mt-2">Total: ₱{totalAmount.toLocaleString()}</p>
         </div>
         
-        {renderStepContent()}
+        {isProcessing && paymentStep !== 'confirmation' ? (
+          <div className="flex flex-col items-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-kasadya-purple mb-4" />
+            <p>Processing your payment...</p>
+            <p className="text-sm text-gray-500 mt-2">Please do not refresh the page.</p>
+          </div>
+        ) : (
+          renderStepContent()
+        )}
       </CardContent>
     </Card>
   );
