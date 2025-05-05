@@ -78,7 +78,12 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
   const fetchBookings = () => {
     const storedBookings = localStorage.getItem('bookings');
     if (storedBookings) {
-      setBookings(JSON.parse(storedBookings));
+      try {
+        setBookings(JSON.parse(storedBookings));
+      } catch (error) {
+        console.error('Error parsing bookings from localStorage:', error);
+        setBookings([]);
+      }
     }
   };
 
@@ -135,10 +140,13 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
   ): Promise<boolean> => {
     try {
       const booking = bookings.find(b => b.id === bookingId);
-      if (!booking) return false;
+      if (!booking) {
+        console.error('Booking not found:', bookingId);
+        return false;
+      }
 
       // Simulate payment processing delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Calculate amount already paid (if any)
       const previouslyPaid = booking.amountPaid || 0;

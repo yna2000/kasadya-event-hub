@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +15,7 @@ import {
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBooking } from '@/contexts/BookingContext';
 import { toast } from '@/hooks/use-toast';
-import PaymentMethodSelection from './PaymentMethodSelection';
+import { EnhancedPaymentMethodSelection } from './EnhancedPaymentMethodSelection';
 import { Check, CreditCard } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
@@ -26,6 +25,8 @@ interface PaymentFormProps {
   vendorName: string;
   totalAmount: number;
   onSuccess?: () => void;
+  onBack?: () => void;
+  onCancel?: () => void;
 }
 
 const paymentSchema = z.object({
@@ -44,6 +45,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   vendorName,
   totalAmount,
   onSuccess,
+  onBack,
+  onCancel
 }) => {
   const { processPayment } = useBooking();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -113,23 +116,59 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     return value;
   };
 
+  // Handle simple payment method (like cash) directly without details
+  const handleDirectPayment = async () => {
+    setIsProcessing(true);
+    try {
+      const success = await processPayment(bookingId, totalAmount, paymentMethod);
+      
+      if (success) {
+        setPaymentStep('confirmation');
+        toast({
+          title: 'Payment Method Selected',
+          description: `You've selected ${paymentMethod} as your payment method.`,
+        });
+        
+        setTimeout(() => {
+          if (onSuccess) {
+            onSuccess();
+          }
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Payment selection error:', error);
+      toast({
+        title: 'Process Failed',
+        description: 'There was a problem processing your selection. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle continue button in payment method selection
+  const handleContinueFromMethodSelection = () => {
+    if (['cash', 'bank'].includes(paymentMethod)) {
+      // For cash or bank transfer, skip the card details step
+      handleDirectPayment();
+    } else {
+      // For card payments, go to details step
+      setPaymentStep('details');
+    }
+  };
+
   const renderStepContent = () => {
     switch (paymentStep) {
       case 'method':
         return (
-          <div className="space-y-6">
-            <PaymentMethodSelection 
-              selectedMethod={paymentMethod}
-              onMethodChange={(method) => setPaymentMethod(method as 'gcash' | 'maya' | 'bank' | 'cash')}
-            />
-            
-            <Button 
-              onClick={() => setPaymentStep('details')}
-              className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
-            >
-              Continue with {paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}
-            </Button>
-          </div>
+          <EnhancedPaymentMethodSelection
+            selectedMethod={paymentMethod}
+            onSelectMethod={(method) => setPaymentMethod(method as 'gcash' | 'maya' | 'bank' | 'cash')}
+            onContinue={handleContinueFromMethodSelection}
+            onBack={() => onBack && onBack()}
+            onCancel={() => onCancel && onCancel()}
+          />
         );
         
       case 'details':

@@ -3,7 +3,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Banknote, CreditCard, Wallet } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface PaymentMethod {
@@ -62,6 +61,13 @@ export const EnhancedPaymentMethodSelection = ({
       color: 'bg-yellow-500'
     }
   ];
+
+  // Make sure a payment method is selected before allowing to continue
+  const handleContinue = () => {
+    if (selectedMethod) {
+      onContinue();
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -161,7 +167,7 @@ export const EnhancedPaymentMethodSelection = ({
         )}
       </div>
       
-      <div className="flex justify-between">
+      <div className="flex justify-between pt-2">
         <Button 
           type="button" 
           variant="outline" 
@@ -180,7 +186,7 @@ export const EnhancedPaymentMethodSelection = ({
           </Button>
           <Button 
             type="button" 
-            onClick={onContinue}
+            onClick={handleContinue}
             disabled={!selectedMethod}
             className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
           >

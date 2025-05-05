@@ -15,6 +15,7 @@ const ServicePostingPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [pendingServices, setPendingServices] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if user is logged in and is a vendor
@@ -51,6 +52,7 @@ const ServicePostingPage = () => {
     
     // Load vendor's pending services
     loadPendingServices();
+    setIsLoading(false);
   }, [user, navigate, toast]);
   
   const loadPendingServices = () => {
@@ -78,6 +80,10 @@ const ServicePostingPage = () => {
     // Reload pending services
     loadPendingServices();
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
+  }
 
   return (
     <div className="container mx-auto py-10 px-4">
