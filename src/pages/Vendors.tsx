@@ -1,16 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Calendar, FileText } from 'lucide-react';
+import { Search, Plus, Calendar, FileText, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
 
 const Vendors = () => {
-  const [vendors, setVendors] = useState([]);
-  const [services, setServices] = useState([]);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -26,7 +25,8 @@ const Vendors = () => {
         const storedUsers = localStorage.getItem('users');
         if (storedUsers) {
           const allUsers = JSON.parse(storedUsers);
-          const vendorUsers = allUsers.filter(user => user.isVendor && user.isVerified);
+          // Get all vendor users who are verified
+          const vendorUsers = allUsers.filter((user: any) => user.isVendor && user.isVerified);
           setVendors(vendorUsers);
         }
 
@@ -34,7 +34,8 @@ const Vendors = () => {
         const storedServices = localStorage.getItem('vendorServices');
         if (storedServices) {
           const allServices = JSON.parse(storedServices);
-          const approvedServices = allServices.filter(service => service.isApproved === true);
+          // Get all approved services
+          const approvedServices = allServices.filter((service: any) => service.isApproved === true);
           setServices(approvedServices);
         }
       } catch (error) {
@@ -80,13 +81,15 @@ const Vendors = () => {
     navigate('/booking-calendar');
   };
 
-  const handleVendorClick = (vendorId) => {
+  const handleVendorClick = (vendorId: string) => {
+    console.log("Clicked on vendor:", vendorId);
+    
     // Check if the user is verified before proceeding
     if (user && !user.isVerified) {
       toast({
-        title: "Account Not Verified",
-        description: "Your account must be verified by an admin before you can access vendor services.",
-        variant: "destructive",
+        title: 'Account Not Verified',
+        description: 'Your account must be verified by an admin before you can access vendor services.',
+        variant: 'destructive',
       });
       return;
     }
@@ -118,7 +121,9 @@ const Vendors = () => {
     }
   };
   
-  const navigateToVendor = (vendorId) => {
+  const navigateToVendor = (vendorId: string) => {
+    console.log("Navigating to vendor:", vendorId);
+    
     // Find services by this vendor
     const vendorServices = services.filter(service => service.vendorId === vendorId);
     
@@ -188,7 +193,10 @@ const Vendors = () => {
           <p className="text-amber-700 text-sm">
             Before booking any service, you must agree to our terms and conditions.
             {localStorage.getItem('termsAccepted') === 'true' ? (
-              <span className="ml-2 text-green-600 font-medium">✓ You have already accepted our terms.</span>
+              <span className="ml-2 text-green-600 font-medium">
+                <Check size={16} className="inline mr-1" />
+                You have already accepted our terms.
+              </span>
             ) : (
               <Button
                 variant="link"
@@ -230,16 +238,21 @@ const Vendors = () => {
                 <p className="text-sm text-gray-600 mb-2">
                   {vendor.businessType || "Service Provider"}
                 </p>
-                <div className="flex items-center mt-2">
-                  {vendor.isVerified ? (
-                    <span className="bg-green-100 text-green-800 text-xs py-1 px-2 rounded-full">
-                      Verified Vendor
-                    </span>
-                  ) : (
-                    <span className="bg-yellow-100 text-yellow-800 text-xs py-1 px-2 rounded-full">
-                      Pending Verification
-                    </span>
-                  )}
+                <div className="flex items-center justify-between mt-2">
+                  <span className="bg-green-100 text-green-800 text-xs py-1 px-2 rounded-full">
+                    Verified Vendor
+                  </span>
+                  <Button 
+                    size="sm" 
+                    variant="default"
+                    className="bg-kasadya-purple hover:bg-kasadya-deep-purple text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleVendorClick(vendor.id);
+                    }}
+                  >
+                    View Services
+                  </Button>
                 </div>
               </div>
             </div>
