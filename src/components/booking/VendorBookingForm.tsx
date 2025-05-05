@@ -16,12 +16,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Shield, Info, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, Shield, Info, Check, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from '@/hooks/use-toast';
+import { 
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
 
 const bookingSchema = z.object({
   date: z.date({
@@ -29,6 +36,9 @@ const bookingSchema = z.object({
   }),
   time: z.string().min(1, { message: 'Please select a time' }),
   notes: z.string().optional(),
+  agreeToTerms: z.boolean().refine(val => val === true, {
+    message: 'You must agree to the terms and conditions',
+  }),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
@@ -58,11 +68,18 @@ const VendorBookingForm = ({
   const { isDateAvailable } = useBooking();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingProgress, setBookingProgress] = useState(25);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // Check if user has already accepted terms
+  const [termsAccepted, setTermsAccepted] = useState(() => {
+    return localStorage.getItem('termsAccepted') === 'true';
+  });
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       notes: '',
+      agreeToTerms: termsAccepted, // Pre-set if already accepted
     },
   });
 
@@ -73,6 +90,16 @@ const VendorBookingForm = ({
   };
 
   const handleSubmit = (data: BookingFormData) => {
+    // Verify user is approved before allowing booking
+    if (user && !user.isVerified) {
+      toast({
+        title: 'Account Not Verified',
+        description: 'Your account must be verified by an admin before you can make bookings. Please check back later.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     // Check if the date is available before proceeding
@@ -88,6 +115,12 @@ const VendorBookingForm = ({
       return;
     }
 
+    // Store terms acceptance in localStorage
+    if (data.agreeToTerms) {
+      localStorage.setItem('termsAccepted', 'true');
+      localStorage.setItem('termsAcceptedDate', new Date().toISOString());
+    }
+
     // Update booking progress
     setBookingProgress(50);
 
@@ -97,6 +130,16 @@ const VendorBookingForm = ({
     }
     
     setIsSubmitting(false);
+  };
+
+  const openTermsModal = () => {
+    setShowTermsModal(true);
+  };
+
+  const handleTermsAccepted = () => {
+    setTermsAccepted(true);
+    form.setValue('agreeToTerms', true);
+    setShowTermsModal(false);
   };
 
   // Available time slots
@@ -222,6 +265,40 @@ const VendorBookingForm = ({
             )}
           />
 
+          <FormField
+            control={form.control}
+            name="agreeToTerms"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-sm font-medium leading-none">
+                    I agree to the{" "}
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-blue-500 hover:text-blue-700"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openTermsModal();
+                      }}
+                    >
+                      terms and conditions
+                    </Button>
+                  </FormLabel>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {termsAccepted ? "You have already accepted the terms and conditions." : "You must agree to the terms and conditions before proceeding."}
+                  </p>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+
           <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-md">
             <Shield size={16} className="text-kasadya-purple" />
             <span>Your booking information is secure and protected</span>
@@ -234,13 +311,20 @@ const VendorBookingForm = ({
             <Button 
               type="submit" 
               className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !form.getValues().agreeToTerms}
             >
               {isSubmitting ? 'Processing...' : 'Continue to Payment'}
             </Button>
           </div>
         </form>
       </Form>
+
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditionsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={handleTermsAccepted}
+      />
     </div>
   );
 };

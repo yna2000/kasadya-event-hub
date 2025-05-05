@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon, Shield } from 'lucide-react';
+import { CalendarIcon, Shield, Info, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBooking } from '@/contexts/BookingContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -74,11 +75,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [bookingData, setBookingData] = useState<BookingFormData | null>(null);
 
+  // Check if user has already accepted terms
+  const [termsAccepted, setTermsAccepted] = useState(() => {
+    return localStorage.getItem('termsAccepted') === 'true';
+  });
+
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       notes: '',
-      agreeToTerms: false,
+      agreeToTerms: termsAccepted, // Pre-set if already accepted
     }
   });
 
@@ -90,6 +96,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
         variant: 'destructive',
       });
       navigate('/login');
+      return;
+    }
+
+    // Verify user is approved before allowing booking
+    if (!user.isVerified) {
+      toast({
+        title: 'Account Not Verified',
+        description: 'Your account must be verified by an admin before you can make bookings. Please check back later.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -142,6 +158,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     if (success) {
       setShowOtpVerification(false);
+      toast({
+        title: "Booking Confirmed",
+        description: "Your booking has been successfully confirmed!",
+      });
       if (onSuccess) {
         onSuccess();
       } else {
@@ -158,6 +178,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setShowTermsModal(true);
   };
 
+  const handleTermsAccepted = () => {
+    setTermsAccepted(true);
+    form.setValue('agreeToTerms', true);
+    setShowTermsModal(false);
+  };
+
   // Generate time slot options
   const timeSlots = [];
   for (let hour = 8; hour <= 18; hour++) {
@@ -172,7 +198,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
   return (
     <>
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-2">Book This Service</h2>
+        <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+          <CalendarIcon className="h-5 w-5 text-kasadya-purple" />
+          Book This Service
+        </h2>
         <div className="mb-6">
           <p className="font-medium">{serviceName}</p>
           <p className="text-sm text-gray-600 mb-2">{serviceDescription}</p>
@@ -289,6 +318,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
                         terms and conditions
                       </Button>
                     </FormLabel>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {termsAccepted ? "You have already accepted the terms and conditions." : "You must agree to the terms and conditions before proceeding."}
+                    </p>
                     <FormMessage />
                   </div>
                 </FormItem>
@@ -303,7 +335,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             <Button 
               type="submit" 
               className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !form.getValues().agreeToTerms}
             >
               {isSubmitting ? 'Processing...' : 'Continue to Verification'}
             </Button>
@@ -326,10 +358,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       <TermsAndConditionsModal
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
-        onAccept={() => {
-          form.setValue('agreeToTerms', true);
-          setShowTermsModal(false);
-        }}
+        onAccept={handleTermsAccepted}
       />
     </>
   );

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Calendar } from 'lucide-react';
+import { Search, Plus, Calendar, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import TermsAndConditionsModal from '@/components/modals/TermsAndConditionsModal';
@@ -81,6 +81,16 @@ const Vendors = () => {
   };
 
   const handleVendorClick = (vendorId) => {
+    // Check if the user is verified before proceeding
+    if (user && !user.isVerified) {
+      toast({
+        title: "Account Not Verified",
+        description: "Your account must be verified by an admin before you can access vendor services.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Check if terms and conditions were already accepted
     const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
     
@@ -168,6 +178,27 @@ const Vendors = () => {
               Post New Service
             </Button>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 p-4 rounded-md flex items-start space-x-3 mb-6">
+        <FileText size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="font-semibold text-amber-800">Terms & Conditions</p>
+          <p className="text-amber-700 text-sm">
+            Before booking any service, you must agree to our terms and conditions.
+            {localStorage.getItem('termsAccepted') === 'true' ? (
+              <span className="ml-2 text-green-600 font-medium">✓ You have already accepted our terms.</span>
+            ) : (
+              <Button
+                variant="link"
+                className="p-0 h-auto text-amber-600 hover:text-amber-800 ml-2"
+                onClick={() => setShowTermsModal(true)}
+              >
+                Read and accept terms
+              </Button>
+            )}
+          </p>
         </div>
       </div>
 

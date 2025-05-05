@@ -3,7 +3,7 @@ import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Shield, AlertTriangle } from 'lucide-react';
+import { Shield, FileText } from 'lucide-react';
 
 interface BookingTermsProps {
   onAccept: () => void;
@@ -13,16 +13,24 @@ interface BookingTermsProps {
 
 const BookingTerms = ({ onAccept, onCancel, onBack }: BookingTermsProps) => {
   const [accepted, setAccepted] = React.useState(false);
+  
+  const handleAccept = () => {
+    if (accepted) {
+      // Store acceptance in localStorage to maintain consistency
+      localStorage.setItem('termsAccepted', 'true');
+      localStorage.setItem('termsAcceptedDate', new Date().toISOString());
+      onAccept();
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="bg-amber-50 border border-amber-200 p-4 rounded-md flex items-start space-x-3">
-        <AlertTriangle size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
+      <div className="flex items-start gap-3">
+        <FileText className="h-5 w-5 text-kasadya-purple flex-shrink-0 mt-1" />
         <div>
-          <p className="font-semibold text-amber-800">Important Notice</p>
-          <p className="text-amber-700 text-sm">
-            Please read the following terms and conditions carefully before proceeding with your booking.
-            By accepting these terms, you agree to comply with all the policies outlined below.
+          <h2 className="text-xl font-bold">Terms and Conditions</h2>
+          <p className="text-gray-600 text-sm">
+            Please read and accept our terms and conditions before proceeding with your booking.
           </p>
         </div>
       </div>
@@ -171,7 +179,7 @@ const BookingTerms = ({ onAccept, onCancel, onBack }: BookingTermsProps) => {
           </Button>
           <Button 
             type="button" 
-            onClick={onAccept}
+            onClick={handleAccept}
             disabled={!accepted}
             className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
           >

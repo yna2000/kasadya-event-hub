@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Shield, FileText } from 'lucide-react';
 
 interface TermsAndConditionsModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ const TermsAndConditionsModal = ({
     if (accepted) {
       // Store acceptance in localStorage
       localStorage.setItem('termsAccepted', 'true');
+      localStorage.setItem('termsAcceptedDate', new Date().toISOString());
       onAccept();
     }
   };
@@ -38,7 +40,10 @@ const TermsAndConditionsModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Kasadya Events Terms and Conditions</DialogTitle>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <FileText className="h-5 w-5 text-kasadya-purple" />
+            Kasadya Events Terms and Conditions
+          </DialogTitle>
           <DialogDescription>
             Please read and accept our terms and conditions before proceeding.
           </DialogDescription>
@@ -158,6 +163,11 @@ const TermsAndConditionsModal = ({
           <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             I have read and agree to the terms and conditions
           </Label>
+        </div>
+        
+        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-md">
+          <Shield size={16} className="text-kasadya-purple" />
+          <span>Your agreement is required before accessing booking services</span>
         </div>
         
         <DialogFooter className="mt-4">
