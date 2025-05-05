@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Music, Gift, Camera, Cake, Users, Award, Home, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,23 +7,50 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Services = () => {
   const [activeTab, setActiveTab] = useState("all");
+  const [vendorServices, setVendorServices] = useState<any[]>([]);
   
   // Service categories with their icons
   const categories = [
     { id: "all", label: "All Services" },
-    { id: "weddings", label: "Weddings", icon: <Calendar /> },
-    { id: "birthdays", label: "Birthdays", icon: <Cake /> },
-    { id: "corporate", label: "Corporate", icon: <Users /> },
+    { id: "photography", label: "Photography", icon: <Camera /> },
+    { id: "videography", label: "Videography", icon: <Camera /> },
+    { id: "catering", label: "Catering", icon: <Utensils /> },
+    { id: "venue", label: "Venues", icon: <Home /> },
     { id: "entertainment", label: "Entertainment", icon: <Music /> },
+    { id: "decoration", label: "Decoration", icon: <Gift /> },
+    { id: "bakery", label: "Bakery", icon: <Cake /> },
+    { id: "florist", label: "Florist", icon: <Gift /> },
+    { id: "transportation", label: "Transportation", icon: <Gift /> },
+    { id: "beauty", label: "Beauty & Makeup", icon: <Gift /> },
   ];
 
-  // Service listings - would come from an API in a real application
-  const services = [
+  useEffect(() => {
+    // Load approved vendor services
+    try {
+      const storedServices = localStorage.getItem('vendorServices') || '[]';
+      const services = JSON.parse(storedServices);
+      const approvedServices = services.filter((service: any) => service.isApproved);
+      setVendorServices(approvedServices);
+    } catch (error) {
+      console.error('Error loading vendor services:', error);
+    }
+  }, []);
+
+  // Filter services based on active tab
+  const filteredServices = activeTab === "all" 
+    ? vendorServices 
+    : vendorServices.filter(service => service.category === activeTab);
+  
+  // Additional filter for popular services (for now, just take the first 4)
+  const popularServices = vendorServices.slice(0, 4);
+
+  // Fallback static services if no approved vendor services
+  const staticServices = [
     {
       id: 1,
       title: "Wedding Photography",
       description: "Professional photographers to capture your special day with artistic flair and attention to detail.",
-      category: "weddings",
+      category: "photography",
       icon: <Camera className="h-8 w-8 text-kasadya-purple" />,
       popular: true,
     },
@@ -31,7 +58,7 @@ const Services = () => {
       id: 2,
       title: "Wedding Venues",
       description: "Beautiful venues for your ceremony and reception, from beaches to gardens to elegant ballrooms.",
-      category: "weddings",
+      category: "venue",
       icon: <Home className="h-8 w-8 text-kasadya-purple" />,
       popular: true,
     },
@@ -39,7 +66,7 @@ const Services = () => {
       id: 3,
       title: "Wedding Catering",
       description: "Exquisite menus and professional service for your wedding dinner.",
-      category: "weddings",
+      category: "catering",
       icon: <Utensils className="h-8 w-8 text-kasadya-purple" />,
       popular: false,
     },
@@ -47,51 +74,21 @@ const Services = () => {
       id: 4,
       title: "Birthday Party Planning",
       description: "End-to-end planning for memorable birthday celebrations for all ages.",
-      category: "birthdays",
+      category: "bakery",
       icon: <Cake className="h-8 w-8 text-kasadya-purple" />,
-      popular: true,
-    },
-    {
-      id: 5,
-      title: "Children's Entertainment",
-      description: "Fun activities, games, and entertainment packages for kids' parties.",
-      category: "birthdays",
-      icon: <Gift className="h-8 w-8 text-kasadya-purple" />,
-      popular: false,
-    },
-    {
-      id: 6,
-      title: "Corporate Event Management",
-      description: "Full-service management for conferences, product launches, and company milestones.",
-      category: "corporate",
-      icon: <Award className="h-8 w-8 text-kasadya-purple" />,
-      popular: true,
-    },
-    {
-      id: 7,
-      title: "Team Building Activities",
-      description: "Engaging activities to boost team morale and improve collaboration.",
-      category: "corporate",
-      icon: <Users className="h-8 w-8 text-kasadya-purple" />,
-      popular: false,
-    },
-    {
-      id: 8,
-      title: "Live Bands & Musicians",
-      description: "Talented performers to provide the perfect soundtrack for your event.",
-      category: "entertainment",
-      icon: <Music className="h-8 w-8 text-kasadya-purple" />,
       popular: true,
     },
   ];
 
-  // Filter services based on active tab
-  const filteredServices = activeTab === "all" 
-    ? services 
-    : services.filter(service => service.category === activeTab);
-  
-  // Additional filter for popular services
-  const popularServices = services.filter(service => service.popular);
+  // Use vendor services if available, otherwise use static services
+  const displayedPopularServices = popularServices.length > 0 ? popularServices : staticServices;
+  const displayedServices = filteredServices.length > 0 ? filteredServices : staticServices;
+
+  // Function to get icon for a category
+  const getCategoryIcon = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category?.icon || <Gift className="h-8 w-8 text-kasadya-purple" />;
+  };
 
   return (
     <>
@@ -114,16 +111,30 @@ const Services = () => {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {popularServices.map((service) => (
+            {displayedPopularServices.map((service) => (
               <div 
                 key={service.id} 
                 className="border border-gray-200 rounded-lg p-6 flex flex-col h-full hover:shadow-lg hover:border-kasadya-purple transition-all"
               >
-                <div className="mb-4">{service.icon}</div>
-                <h3 className="text-xl font-bold mb-2">{service.title}</h3>
-                <p className="text-gray-600 mb-4 flex-grow">{service.description}</p>
+                <div className="mb-4">
+                  {service.images && service.images.length > 0 ? (
+                    <img 
+                      src={service.images[0]} 
+                      alt={service.name || service.title} 
+                      className="h-40 w-full object-cover rounded-md mb-4"
+                    />
+                  ) : (
+                    getCategoryIcon(service.category)
+                  )}
+                </div>
+                <h3 className="text-xl font-bold mb-2">{service.name || service.title}</h3>
+                <p className="text-gray-600 mb-4 flex-grow line-clamp-3">
+                  {service.description}
+                </p>
                 <Button asChild variant="outline" className="w-full border-kasadya-purple text-kasadya-purple hover:bg-kasadya-purple hover:text-white">
-                  <Link to="/vendors">Find Providers</Link>
+                  <Link to={service.vendorId ? `/vendor-service/${service.id}` : "/vendors"}>
+                    {service.vendorId ? "View Service" : "Find Providers"}
+                  </Link>
                 </Button>
               </div>
             ))}
@@ -140,7 +151,7 @@ const Services = () => {
           </p>
 
           <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-8 overflow-x-auto">
               <TabsList className="bg-white">
                 {categories.map((category) => (
                   <TabsTrigger 
@@ -159,16 +170,36 @@ const Services = () => {
 
             <TabsContent value={activeTab} className="mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredServices.map((service) => (
+                {displayedServices.map((service) => (
                   <div 
                     key={service.id} 
                     className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col h-full hover:shadow-lg hover:border-kasadya-purple transition-all"
                   >
-                    <div className="mb-4">{service.icon}</div>
-                    <h3 className="text-xl font-bold mb-2">{service.title}</h3>
-                    <p className="text-gray-600 mb-4 flex-grow">{service.description}</p>
+                    <div className="mb-4">
+                      {service.images && service.images.length > 0 ? (
+                        <img 
+                          src={service.images[0]} 
+                          alt={service.name || service.title} 
+                          className="h-40 w-full object-cover rounded-md mb-4"
+                        />
+                      ) : (
+                        getCategoryIcon(service.category)
+                      )}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">{service.name || service.title}</h3>
+                    <p className="text-gray-600 mb-4 flex-grow line-clamp-3">
+                      {service.description}
+                    </p>
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-sm text-gray-500 capitalize">{service.category}</span>
+                      {service.price && (
+                        <span className="font-bold text-kasadya-purple">₱{service.price.toLocaleString()}</span>
+                      )}
+                    </div>
                     <Button asChild variant="outline" className="w-full border-kasadya-purple text-kasadya-purple hover:bg-kasadya-purple hover:text-white">
-                      <Link to="/vendors">Find Providers</Link>
+                      <Link to={service.vendorId ? `/vendor-service/${service.id}` : "/vendors"}>
+                        {service.vendorId ? "View Service" : "Find Providers"}
+                      </Link>
                     </Button>
                   </div>
                 ))}

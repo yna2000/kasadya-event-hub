@@ -1,17 +1,20 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ServiceUploadForm from '@/components/vendor/ServiceUploadForm';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Shield, Info } from 'lucide-react';
+import { AlertTriangle, Shield, Info, FileCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const ServicePostingPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [pendingServices, setPendingServices] = useState<any[]>([]);
 
   useEffect(() => {
     // Check if user is logged in and is a vendor
@@ -40,12 +43,30 @@ const ServicePostingPage = () => {
     if (!user.isVerified) {
       toast({
         title: "Account Not Verified",
-        description: "Your account needs to be verified by an admin before you can post services.",
+        description: "Your account needs to be verified by an admin before your services can be approved.",
         variant: "destructive",
       });
       // Still allow them to stay on page, but they'll see a warning
     }
+    
+    // Load vendor's pending services
+    loadPendingServices();
   }, [user, navigate, toast]);
+  
+  const loadPendingServices = () => {
+    if (user?.id) {
+      try {
+        const storedServices = localStorage.getItem('vendorServices') || '[]';
+        const services = JSON.parse(storedServices);
+        const pending = services.filter(
+          (service: any) => service.vendorId === user.id && !service.isApproved
+        );
+        setPendingServices(pending);
+      } catch (error) {
+        console.error('Error loading pending services:', error);
+      }
+    }
+  };
 
   // Handler for successful service submission
   const handleSuccess = () => {
@@ -54,10 +75,8 @@ const ServicePostingPage = () => {
       description: "Your service has been submitted for admin approval.",
     });
     
-    // Create a delay before navigating
-    setTimeout(() => {
-      navigate('/vendor-dashboard');
-    }, 1500);
+    // Reload pending services
+    loadPendingServices();
   };
 
   return (
@@ -84,8 +103,42 @@ const ServicePostingPage = () => {
         </Alert>
       )}
 
+      {pendingServices.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Clock className="h-5 w-5 mr-2 text-orange-500" />
+              Pending Services
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm mb-4">
+              You have {pendingServices.length} {pendingServices.length === 1 ? 'service' : 'services'} awaiting admin approval.
+            </p>
+            <div className="space-y-3">
+              {pendingServices.map(service => (
+                <div key={service.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div>
+                    <p className="font-medium">{service.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="capitalize">{service.category}</Badge>
+                      <Badge variant="outline">₱{service.price.toLocaleString()}</Badge>
+                    </div>
+                  </div>
+                  <Badge className="bg-orange-500">Pending Approval</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {user && (
         <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
+          <div className="flex items-center mb-6">
+            <FileCheck className="h-6 w-6 text-kasadya-purple mr-2" /> 
+            <h2 className="text-xl font-semibold">Service Information</h2>
+          </div>
           <ServiceUploadForm onSuccess={handleSuccess} />
         </div>
       )}

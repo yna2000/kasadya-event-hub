@@ -1,13 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calendar, Clock, CheckCircle2, XCircle, User, UserCheck, Users } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, XCircle, User, UserCheck, Users, Camera, FileCheck, Shield } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -16,6 +24,10 @@ export default function AdminDashboard() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [adminNotifications, setAdminNotifications] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [pendingServices, setPendingServices] = useState<any[]>([]);
+  const [serviceDetailOpen, setServiceDetailOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<any>(null);
+  const [adminComment, setAdminComment] = useState('');
 
   useEffect(() => {
     // Redirect if not admin
@@ -35,7 +47,21 @@ export default function AdminDashboard() {
     const storedNotifications = localStorage.getItem('adminNotifications') || '[]';
     const notifications = JSON.parse(storedNotifications);
     setAdminNotifications(notifications);
+    
+    // Load pending services
+    loadPendingServices();
   }, [user, navigate, getPendingVerificationUsers, getAllUsers]);
+
+  const loadPendingServices = () => {
+    try {
+      const storedServices = localStorage.getItem('vendorServices') || '[]';
+      const services = JSON.parse(storedServices);
+      const pending = services.filter((service: any) => !service.isApproved);
+      setPendingServices(pending);
+    } catch (error) {
+      console.error('Error loading pending services:', error);
+    }
+  };
 
   const handleVerifyUser = async (userId: string, isVerified: boolean) => {
     const success = await verifyUser(userId, isVerified);
@@ -83,11 +109,87 @@ export default function AdminDashboard() {
     localStorage.setItem('adminNotifications', JSON.stringify(updatedNotifications));
   };
 
+  const openServiceDetail = (service: any) => {
+    setSelectedService(service);
+    setServiceDetailOpen(true);
+  };
+
+  const handleApproveService = (approved: boolean) => {
+    try {
+      const storedServices = localStorage.getItem('vendorServices') || '[]';
+      const services = JSON.parse(storedServices);
+      
+      const updatedServices = services.map((service: any) => {
+        if (service.id === selectedService.id) {
+          return {
+            ...service,
+            isApproved: approved,
+            adminComments: adminComment,
+            reviewedAt: new Date().toISOString(),
+          };
+        }
+        return service;
+      });
+      
+      localStorage.setItem('vendorServices', JSON.stringify(updatedServices));
+      
+      // Create notification for vendor
+      const vendorNotifications = JSON.parse(localStorage.getItem('vendorNotifications') || '[]');
+      vendorNotifications.push({
+        id: `notification-${Date.now()}`,
+        vendorId: selectedService.vendorId,
+        title: approved ? 'Service Approved' : 'Service Rejected',
+        message: approved 
+          ? `Your service "${selectedService.name}" has been approved and is now live.`
+          : `Your service "${selectedService.name}" was not approved. Reason: ${adminComment || 'No reason provided.'}`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+      
+      localStorage.setItem('vendorNotifications', JSON.stringify(vendorNotifications));
+      
+      // Mark related admin notification as read
+      const updatedNotifications = adminNotifications.map(notification => {
+        if (notification.serviceId === selectedService.id) {
+          return { ...notification, read: true };
+        }
+        return notification;
+      });
+      
+      localStorage.setItem('adminNotifications', JSON.stringify(updatedNotifications));
+      setAdminNotifications(updatedNotifications);
+      
+      // Update local state
+      setPendingServices(pendingServices.filter(service => service.id !== selectedService.id));
+      
+      // Show success toast
+      toast({
+        title: approved ? 'Service Approved' : 'Service Rejected',
+        description: approved 
+          ? `The service has been approved and is now live.` 
+          : `The service has been rejected.`,
+      });
+      
+      // Reset and close dialog
+      setServiceDetailOpen(false);
+      setSelectedService(null);
+      setAdminComment('');
+    } catch (error) {
+      console.error('Error approving/rejecting service:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to process the service. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Count users by role
   const vendorCount = allUsers.filter(user => user.isVendor).length;
   const customerCount = allUsers.filter(user => !user.isVendor && !user.isAdmin).length;
   const pendingVerificationCount = pendingUsers.length;
   const unreadNotificationsCount = adminNotifications.filter(n => !n.read).length;
+  const pendingServicesCount = pendingServices.length;
 
   return (
     <div className="container mx-auto p-6">
@@ -101,13 +203,21 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users" className="relative">
             Users
             {pendingVerificationCount > 0 && (
               <Badge className="absolute -top-2 -right-2 bg-red-500 text-white">
                 {pendingVerificationCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="services" className="relative">
+            Services
+            {pendingServicesCount > 0 && (
+              <Badge className="absolute -top-2 -right-2 bg-red-500 text-white">
+                {pendingServicesCount}
               </Badge>
             )}
           </TabsTrigger>
@@ -154,51 +264,32 @@ export default function AdminDashboard() {
                 </p>
               </CardContent>
             </Card>
-
-            <Card className="md:col-span-2 lg:col-span-1">
+            
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Recent Activity
+                  Pending Services
                 </CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Camera className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {adminNotifications.slice(0, 3).map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`flex items-center justify-between p-2 rounded-md ${
-                        !notification.read ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{notification.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(notification.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      {!notification.read && (
-                        <Badge className="bg-blue-500">New</Badge>
-                      )}
-                    </div>
-                  ))}
-                  {adminNotifications.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No recent activity</p>
-                  )}
-                </div>
+                <div className="text-2xl font-bold">{pendingServicesCount}</div>
+                <p className="text-xs text-muted-foreground">
+                  Services awaiting your approval
+                </p>
               </CardContent>
             </Card>
           </div>
 
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Pending Verifications</CardTitle>
-              <CardDescription>
-                Users awaiting account verification
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pendingUsers.length > 0 ? (
+          {pendingVerificationCount > 0 && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Pending User Verifications</CardTitle>
+                <CardDescription>
+                  Users awaiting account verification
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
                   {pendingUsers.slice(0, 3).map((pendingUser) => (
                     <div key={pendingUser.id} className="flex items-center justify-between border-b pb-4">
@@ -238,14 +329,76 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
+                  {pendingUsers.length > 3 && (
+                    <Button variant="link" onClick={() => setActiveTab("users")}>
+                      View all {pendingUsers.length} pending users
+                    </Button>
+                  )}
                 </div>
-              ) : (
-                <p className="text-center text-muted-foreground py-4">
-                  No users awaiting verification
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+          
+          {pendingServicesCount > 0 && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Pending Service Approvals</CardTitle>
+                <CardDescription>
+                  Services awaiting your review and approval
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {pendingServices.slice(0, 3).map((service) => (
+                    <div key={service.id} className="flex items-center justify-between border-b pb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
+                          {service.images && service.images.length > 0 ? (
+                            <img 
+                              src={service.images[0]} 
+                              alt={service.name} 
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+                              <Camera className="h-6 w-6 text-gray-500" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{service.name}</p>
+                          <p className="text-sm text-muted-foreground truncate max-w-[300px]">
+                            {service.description.substring(0, 60)}
+                            {service.description.length > 60 ? '...' : ''}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="capitalize">
+                              {service.category}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground">
+                              by {service.vendorName}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => openServiceDetail(service)}
+                      >
+                        <Shield className="h-4 w-4 mr-1" />
+                        Review
+                      </Button>
+                    </div>
+                  ))}
+                  {pendingServices.length > 3 && (
+                    <Button variant="link" onClick={() => setActiveTab("services")}>
+                      View all {pendingServices.length} pending services
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="users">
@@ -380,6 +533,132 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="services">
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Management</CardTitle>
+              <CardDescription>
+                Review and approve vendor services
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="pending">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="pending">Pending Approval ({pendingServices.length})</TabsTrigger>
+                  <TabsTrigger value="all">All Services</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="pending">
+                  {pendingServices.length > 0 ? (
+                    <div className="space-y-6">
+                      {pendingServices.map((service) => (
+                        <div key={service.id} className="border rounded-lg p-4 shadow-sm">
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-4">
+                              <div className="h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
+                                {service.images && service.images.length > 0 ? (
+                                  <img 
+                                    src={service.images[0]} 
+                                    alt={service.name} 
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+                                    <Camera className="h-8 w-8 text-gray-500" />
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-lg">{service.name}</h3>
+                                <p className="text-sm text-muted-foreground">By {service.vendorName}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge variant="outline" className="capitalize">
+                                    {service.category}
+                                  </Badge>
+                                  <Badge variant="outline">
+                                    ₱{service.price.toLocaleString()}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => openServiceDetail(service)}
+                            >
+                              <FileCheck className="h-4 w-4 mr-1" />
+                              Review Details
+                            </Button>
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-sm font-semibold">Description</p>
+                            <p className="text-sm text-muted-foreground">
+                              {service.description.length > 200 
+                                ? `${service.description.substring(0, 200)}...` 
+                                : service.description}
+                            </p>
+                          </div>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {service.images && service.images.slice(0, 4).map((image: string, idx: number) => (
+                              <div key={idx} className="h-16 w-16 rounded-md overflow-hidden">
+                                <img src={image} alt={`${service.name} ${idx+1}`} className="h-full w-full object-cover" />
+                              </div>
+                            ))}
+                            {service.images && service.images.length > 4 && (
+                              <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center">
+                                <span className="text-sm text-gray-500">+{service.images.length - 4}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-4 flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              className="border-red-200 text-red-600 hover:bg-red-50"
+                              onClick={() => {
+                                setSelectedService(service);
+                                setServiceDetailOpen(true);
+                              }}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                            <Button
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => {
+                                setSelectedService(service);
+                                setAdminComment('Approved');
+                                handleApproveService(true);
+                              }}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Camera className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <h3 className="font-medium text-lg">No Pending Services</h3>
+                      <p className="text-muted-foreground">All services have been reviewed</p>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="all">
+                  <div className="text-center py-8">
+                    <Camera className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <h3 className="font-medium text-lg">Service Analytics</h3>
+                    <p className="text-muted-foreground">View all services in the marketplace</p>
+                    <Button className="mt-4" onClick={() => navigate('/services')}>
+                      View All Services
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="bookings">
           <Card>
             <CardHeader>
@@ -449,6 +728,98 @@ export default function AdminDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={serviceDetailOpen} onOpenChange={setServiceDetailOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Review Service</DialogTitle>
+            <DialogDescription>
+              Review details and approve or reject this service
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedService && (
+            <>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold text-lg">{selectedService.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">By {selectedService.vendorName}</p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-sm">Category</h4>
+                      <p className="capitalize">{selectedService.category}</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-sm">Price</h4>
+                      <p>₱{selectedService.price.toLocaleString()}</p>
+                    </div>
+                    
+                    {selectedService.duration && (
+                      <div>
+                        <h4 className="font-semibold text-sm">Duration</h4>
+                        <p>{selectedService.duration}</p>
+                      </div>
+                    )}
+                    
+                    {selectedService.maxCapacity && (
+                      <div>
+                        <h4 className="font-semibold text-sm">Max Capacity</h4>
+                        <p>{selectedService.maxCapacity} guests</p>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <h4 className="font-semibold text-sm">Description</h4>
+                      <p className="text-sm whitespace-pre-wrap">{selectedService.description}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Images</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedService.images && selectedService.images.map((image: string, idx: number) => (
+                      <div key={idx} className="h-32 rounded-md overflow-hidden">
+                        <img src={image} alt={`${selectedService.name} ${idx+1}`} className="h-full w-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Admin Comment</h4>
+                <Textarea 
+                  placeholder="Add a comment about this service (optional for approval, required for rejection)"
+                  value={adminComment}
+                  onChange={(e) => setAdminComment(e.target.value)}
+                  className="min-h-24"
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  className="border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={() => handleApproveService(false)}
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Reject Service
+                </Button>
+                <Button
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => handleApproveService(true)}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Approve Service
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
