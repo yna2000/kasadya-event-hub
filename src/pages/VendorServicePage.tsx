@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import VendorBookingForm from '@/components/booking/VendorBookingForm';
@@ -10,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calendar, Clock, MapPin, Phone, Star, 
-  User, Package, Shield, AlertTriangle
+  User, Package, Shield, AlertTriangle, Loader2
 } from 'lucide-react';
 import { 
   Sheet,
@@ -33,6 +34,7 @@ const VendorServicePage = () => {
   const [bookingStep, setBookingStep] = useState<'details' | 'terms' | 'verification' | 'payment' | 'confirmation'>('details');
   const [bookingDetails, setBookingDetails] = useState<any>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { createBooking } = useBooking();
   const navigate = useNavigate();
@@ -42,6 +44,7 @@ const VendorServicePage = () => {
     // Fetch vendor data from localStorage
     const fetchVendor = () => {
       try {
+        setIsLoading(true);
         const storedUsers = localStorage.getItem('users');
         if (storedUsers) {
           const allUsers = JSON.parse(storedUsers);
@@ -70,6 +73,13 @@ const VendorServicePage = () => {
             };
             
             setVendor(vendorData);
+          } else {
+            console.error('Vendor not found with ID:', vendorId);
+            toast({
+              title: "Vendor not found",
+              description: "The requested vendor could not be found.",
+              variant: "destructive",
+            });
           }
         }
       } catch (error) {
@@ -79,13 +89,15 @@ const VendorServicePage = () => {
           description: "Could not load vendor information.",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     const fetchVendorServices = () => {
       try {
         const storedServices = localStorage.getItem('vendorServices');
-        if (storedServices) {
+        if (storedServices && vendorId) {
           const allServices = JSON.parse(storedServices);
           // Filter services by vendor ID
           const services = allServices.filter((service: any) => service.vendorId === vendorId && service.isApproved === true);
@@ -116,6 +128,16 @@ const VendorServicePage = () => {
       navigate('/login');
       return;
     }
+    
+    if (!user.isVerified) {
+      toast({
+        title: "Account not verified",
+        description: "Your account must be verified by an admin before booking",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setBookingStep('details');
     setShowBookingSheet(true);
   };
@@ -139,7 +161,7 @@ const VendorServicePage = () => {
   
   const handlePaymentContinue = () => {
     // Process the payment
-    if (bookingDetails && selectedService) {
+    if (bookingDetails && selectedService && vendor && user) {
       try {
         // In a real app, the amount would be calculated based on the service
         const amount = selectedService.price || Math.floor(Math.random() * 500) + 100;
@@ -147,7 +169,7 @@ const VendorServicePage = () => {
         const newBookingData = {
           vendorId: vendor.id,
           vendorName: vendor.name,
-          userId: user?.id || '',
+          userId: user.id,
           serviceId: selectedService.id,
           serviceName: selectedService.name,
           serviceDescription: selectedService.description,
@@ -156,8 +178,8 @@ const VendorServicePage = () => {
           amount: amount,
           notes: bookingDetails.notes || '',
           // Add the missing properties required by the Booking interface
-          name: user?.name || '',
-          email: user?.email || '',
+          name: user.name || '',
+          email: user.email || '',
           roomType: selectedService.name,
           checkInDate: bookingDetails.date,
           checkOutDate: bookingDetails.date,
@@ -173,7 +195,7 @@ const VendorServicePage = () => {
             serviceName: selectedService.name,
             amount: amount,
             paymentMethod: selectedPaymentMethod,
-            userName: user?.name,
+            userName: user.name,
             location: vendor.location,
           });
           
@@ -195,6 +217,18 @@ const VendorServicePage = () => {
     setShowBookingSheet(false);
     navigate('/dashboard');
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-kasadya-purple" />
+          <p className="mt-4 text-lg">Loading vendor information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -423,116 +457,118 @@ const VendorServicePage = () => {
       </div>
       
       {/* Booking Sheet */}
-      <Sheet open={showBookingSheet} onOpenChange={setShowBookingSheet}>
-        <SheetContent className="sm:max-w-[600px] overflow-y-auto">
-          <SheetHeader className="mb-6">
-            <SheetTitle className="text-2xl">Book {vendor?.name}</SheetTitle>
-            <SheetDescription>
-              {selectedService ? selectedService.name : vendor?.category}
-            </SheetDescription>
-          </SheetHeader>
-          
-          <BookingSteps currentStep={bookingStep} className="mb-6" />
-          
-          {bookingStep === 'details' && (
-            <VendorBookingForm
-              isOpen={true}
-              onClose={() => setShowBookingSheet(false)}
-              vendor={{
-                id: vendor.id,
-                name: vendor.name,
-                category: vendor.category,
-                location: vendor.location,
-                image: vendor.profileImage || vendor.portfolio[0]
-              }}
-              service={selectedService ? selectedService.name : vendor.category}
-              onSubmit={handleBookingDetailsSubmit}
-            />
-          )}
-          
-          {bookingStep === 'terms' && (
-            <BookingTerms
-              onAccept={handleAcceptTerms}
-              onCancel={() => setShowBookingSheet(false)}
-              onBack={() => setBookingStep('details')}
-            />
-          )}
-          
-          {bookingStep === 'verification' && (
-            <div className="space-y-6">
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-md flex items-start space-x-3">
-                <AlertTriangle size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-amber-800">Verification Required</p>
-                  <p className="text-amber-700 text-sm">
-                    We've sent a verification code to your email address. Please enter it below to confirm your booking.
+      {vendor && (
+        <Sheet open={showBookingSheet} onOpenChange={setShowBookingSheet}>
+          <SheetContent className="sm:max-w-[600px] overflow-y-auto">
+            <SheetHeader className="mb-6">
+              <SheetTitle className="text-2xl">Book {vendor.name}</SheetTitle>
+              <SheetDescription>
+                {selectedService ? selectedService.name : vendor.category}
+              </SheetDescription>
+            </SheetHeader>
+            
+            <BookingSteps currentStep={bookingStep} className="mb-6" />
+            
+            {bookingStep === 'details' && (
+              <VendorBookingForm
+                isOpen={true}
+                onClose={() => setShowBookingSheet(false)}
+                vendor={{
+                  id: vendor.id,
+                  name: vendor.name,
+                  category: vendor.category,
+                  location: vendor.location,
+                  image: vendor.profileImage || vendor.portfolio[0]
+                }}
+                service={selectedService ? selectedService.name : vendor.category}
+                onSubmit={handleBookingDetailsSubmit}
+              />
+            )}
+            
+            {bookingStep === 'terms' && (
+              <BookingTerms
+                onAccept={handleAcceptTerms}
+                onCancel={() => setShowBookingSheet(false)}
+                onBack={() => setBookingStep('details')}
+              />
+            )}
+            
+            {bookingStep === 'verification' && (
+              <div className="space-y-6">
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-md flex items-start space-x-3">
+                  <AlertTriangle size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-amber-800">Verification Required</p>
+                    <p className="text-amber-700 text-sm">
+                      We've sent a verification code to your email address. Please enter it below to confirm your booking.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center space-y-6 py-4">
+                  {/* This would be replaced with an actual OTP component in a real implementation */}
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5, 6].map((_, i) => (
+                      <div key={i} className="w-10 h-12 border-2 rounded flex items-center justify-center font-bold text-xl">
+                        {i === 0 ? '1' : i === 1 ? '2' : i === 2 ? '3' : i === 3 ? '4' : i === 4 ? '5' : '6'}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <Button 
+                    className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
+                    onClick={handleVerificationComplete}
+                  >
+                    Verify and Continue
+                  </Button>
+                  
+                  <p className="text-sm text-gray-500 mt-4">
+                    Didn't receive a code? <Button variant="link" className="p-0 h-auto">Resend</Button>
                   </p>
                 </div>
-              </div>
-              
-              <div className="flex flex-col items-center space-y-6 py-4">
-                {/* This would be replaced with an actual OTP component in a real implementation */}
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5, 6].map((_, i) => (
-                    <div key={i} className="w-10 h-12 border-2 rounded flex items-center justify-center font-bold text-xl">
-                      {i === 0 ? '1' : i === 1 ? '2' : i === 2 ? '3' : i === 3 ? '4' : i === 4 ? '5' : '6'}
-                    </div>
-                  ))}
+                
+                <div className="flex justify-between">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setBookingStep('terms')}
+                  >
+                    Back
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowBookingSheet(false)}
+                  >
+                    Cancel
+                  </Button>
                 </div>
-                
-                <Button 
-                  className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
-                  onClick={handleVerificationComplete}
-                >
-                  Verify and Continue
-                </Button>
-                
-                <p className="text-sm text-gray-500 mt-4">
-                  Didn't receive a code? <Button variant="link" className="p-0 h-auto">Resend</Button>
-                </p>
               </div>
-              
-              <div className="flex justify-between">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setBookingStep('terms')}
-                >
-                  Back
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowBookingSheet(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {bookingStep === 'payment' && (
-            <EnhancedPaymentMethodSelection
-              onSelectMethod={handlePaymentMethodSelected}
-              selectedMethod={selectedPaymentMethod}
-              onBack={() => setBookingStep('verification')}
-              onCancel={() => setShowBookingSheet(false)}
-              onContinue={handlePaymentContinue}
-            />
-          )}
-          
-          {bookingStep === 'confirmation' && bookingDetails && (
-            <BookingConfirmation
-              bookingDetails={bookingDetails}
-              onDone={handleDone}
-            />
-          )}
-          
-          <SheetFooter className="mt-6">
-            {/* Footer content will be handled by individual components */}
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+            )}
+            
+            {bookingStep === 'payment' && (
+              <EnhancedPaymentMethodSelection
+                onSelectMethod={handlePaymentMethodSelected}
+                selectedMethod={selectedPaymentMethod}
+                onBack={() => setBookingStep('verification')}
+                onCancel={() => setShowBookingSheet(false)}
+                onContinue={handlePaymentContinue}
+              />
+            )}
+            
+            {bookingStep === 'confirmation' && bookingDetails && (
+              <BookingConfirmation
+                bookingDetails={bookingDetails}
+                onDone={handleDone}
+              />
+            )}
+            
+            <SheetFooter className="mt-6">
+              {/* Footer content will be handled by individual components */}
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      )}
     </>
   );
 };
