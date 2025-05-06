@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking, Booking } from '@/contexts/BookingContext';
-import { Calendar, Clock, CheckCircle2, XCircle, User, UserCheck, Users, Camera, FileCheck, Shield, DollarSign, Check, X } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, XCircle, User, UserCheck, Users, Camera, FileCheck, Shield, DollarSign, Check, X, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import {
