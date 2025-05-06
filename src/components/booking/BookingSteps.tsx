@@ -2,6 +2,7 @@
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Circle, ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export type BookingStep = 'details' | 'terms' | 'verification' | 'payment' | 'confirmation';
 
@@ -60,6 +61,4 @@ export const BookingSteps = ({ currentStep, className }: BookingStepsProps) => {
   );
 };
 
-function cn(...classes: (string | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
-}
+export default BookingSteps;

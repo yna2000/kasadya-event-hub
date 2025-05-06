@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
-import { CreditCard, DollarSign, Building, Wallet } from 'lucide-react';
+import { CreditCard, DollarSign, Building, Wallet, Loader2 } from 'lucide-react';
 
 interface PaymentMethodSelectionProps {
   selectedMethod: string;
@@ -120,7 +120,14 @@ const PaymentMethodSelection = ({
             disabled={!selectedMethod || isProcessing}
             className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
           >
-            {isProcessing ? 'Processing...' : `Continue with ${selectedMethod ? selectedMethod.charAt(0).toUpperCase() + selectedMethod.slice(1) : 'Payment'}`}
+            {isProcessing ? (
+              <div className="flex items-center justify-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </div>
+            ) : (
+              `Continue with ${selectedMethod ? selectedMethod.charAt(0).toUpperCase() + selectedMethod.slice(1) : 'Payment'}`
+            )}
           </Button>
         </div>
       )}

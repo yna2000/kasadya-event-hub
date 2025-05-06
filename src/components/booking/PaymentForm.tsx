@@ -115,15 +115,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const handleDirectPayment = async () => {
     setIsProcessing(true);
     try {
-      const success = await processPayment(bookingId, totalAmount, paymentMethod);
-      
-      if (success) {
-        setPaymentStep('confirmation');
-        toast({
-          title: 'Payment Method Selected',
-          description: `You've selected ${paymentMethod} as your payment method.`,
-        });
-      }
+      // Use a short timeout to simulate processing
+      setTimeout(async () => {
+        const success = await processPayment(bookingId, totalAmount, paymentMethod);
+        
+        if (success) {
+          setPaymentStep('confirmation');
+          toast({
+            title: 'Payment Method Selected',
+            description: `You've selected ${paymentMethod} as your payment method.`,
+          });
+        }
+        setIsProcessing(false);
+      }, 1000);
     } catch (error) {
       console.error('Payment selection error:', error);
       toast({
@@ -131,7 +135,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         description: 'There was a problem processing your selection. Please try again.',
         variant: 'destructive',
       });
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -154,15 +157,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const handleContinueFromEnhancedSelection = async () => {
     setIsProcessing(true);
     try {
-      const success = await processPayment(bookingId, totalAmount, paymentMethod);
-      
-      if (success) {
-        setPaymentStep('confirmation');
-        toast({
-          title: 'Payment Successful',
-          description: `Your payment via ${paymentMethod.toUpperCase()} has been processed.`,
-        });
-      }
+      // Use a short timeout to simulate processing
+      setTimeout(async () => {
+        const success = await processPayment(bookingId, totalAmount, paymentMethod);
+        
+        if (success) {
+          setPaymentStep('confirmation');
+          toast({
+            title: 'Payment Successful',
+            description: `Your payment via ${paymentMethod.toUpperCase()} has been processed.`,
+          });
+        }
+        setIsProcessing(false);
+      }, 1000);
     } catch (error) {
       console.error('Payment error:', error);
       toast({
@@ -170,7 +177,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         description: 'There was a problem processing your payment. Please try again.',
         variant: 'destructive',
       });
-    } finally {
       setIsProcessing(false);
     }
   };

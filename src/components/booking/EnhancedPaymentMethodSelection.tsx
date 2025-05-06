@@ -90,6 +90,7 @@ export const EnhancedPaymentMethodSelection = ({
     
     // Simulate payment processing
     setTimeout(() => {
+      setSubmitting(false);
       if (selectedMethod && amount) {
         onContinue();
       } else {
@@ -98,7 +99,6 @@ export const EnhancedPaymentMethodSelection = ({
           description: "Please enter all required payment details",
           variant: "destructive"
         });
-        setSubmitting(false);
       }
     }, 1000);
   };
