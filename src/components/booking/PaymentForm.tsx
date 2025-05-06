@@ -84,12 +84,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           title: 'Payment Successful',
           description: `Your payment of ₱${data.amount.toLocaleString()} has been processed.`,
         });
-        
-        setTimeout(() => {
-          if (onSuccess) {
-            onSuccess();
-          }
-        }, 2000); // Give user time to see confirmation
       }
     } catch (error) {
       console.error('Payment error:', error);
@@ -129,12 +123,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           title: 'Payment Method Selected',
           description: `You've selected ${paymentMethod} as your payment method.`,
         });
-        
-        setTimeout(() => {
-          if (onSuccess) {
-            onSuccess();
-          }
-        }, 2000);
       }
     } catch (error) {
       console.error('Payment selection error:', error);
@@ -153,9 +141,37 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     if (['cash', 'bank'].includes(paymentMethod)) {
       // For cash or bank transfer, skip the card details step
       handleDirectPayment();
+    } else if (['gcash', 'maya'].includes(paymentMethod)) {
+      // For GCash/Maya, handle in the enhanced component
+      // The continue action is passed to and handled by EnhancedPaymentMethodSelection
     } else {
       // For card payments, go to details step
       setPaymentStep('details');
+    }
+  };
+
+  // Handle the continue from the payment details step by the EnhancedPaymentMethodSelection component
+  const handleContinueFromEnhancedSelection = async () => {
+    setIsProcessing(true);
+    try {
+      const success = await processPayment(bookingId, totalAmount, paymentMethod);
+      
+      if (success) {
+        setPaymentStep('confirmation');
+        toast({
+          title: 'Payment Successful',
+          description: `Your payment via ${paymentMethod.toUpperCase()} has been processed.`,
+        });
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: 'Payment Failed',
+        description: 'There was a problem processing your payment. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -166,9 +182,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           <EnhancedPaymentMethodSelection
             selectedMethod={paymentMethod}
             onSelectMethod={(method) => setPaymentMethod(method as 'gcash' | 'maya' | 'bank' | 'cash')}
-            onContinue={handleContinueFromMethodSelection}
+            onContinue={handleContinueFromEnhancedSelection}
             onBack={() => onBack && onBack()}
             onCancel={() => onCancel && onCancel()}
+            isProcessing={isProcessing}
           />
         );
         
@@ -306,6 +323,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                   variant="outline"
                   className="flex-1"
                   onClick={() => setPaymentStep('method')}
+                  disabled={isProcessing}
                 >
                   Back
                 </Button>

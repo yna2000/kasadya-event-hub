@@ -10,12 +10,14 @@ interface PaymentMethodSelectionProps {
   selectedMethod: string;
   onMethodChange: (method: string) => void;
   onContinue?: () => void;
+  isProcessing?: boolean;
 }
 
 const PaymentMethodSelection = ({ 
   selectedMethod, 
   onMethodChange,
-  onContinue 
+  onContinue,
+  isProcessing = false
 }: PaymentMethodSelectionProps) => {
   return (
     <div className="space-y-4">
@@ -115,10 +117,10 @@ const PaymentMethodSelection = ({
         <div className="mt-6">
           <Button 
             onClick={onContinue}
-            disabled={!selectedMethod}
+            disabled={!selectedMethod || isProcessing}
             className="w-full bg-kasadya-purple hover:bg-kasadya-deep-purple"
           >
-            Continue with {selectedMethod ? selectedMethod.charAt(0).toUpperCase() + selectedMethod.slice(1) : 'Payment'}
+            {isProcessing ? 'Processing...' : `Continue with ${selectedMethod ? selectedMethod.charAt(0).toUpperCase() + selectedMethod.slice(1) : 'Payment'}`}
           </Button>
         </div>
       )}

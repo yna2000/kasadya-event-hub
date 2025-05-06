@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Banknote, CreditCard, Wallet } from 'lucide-react';
+import { Banknote, CreditCard, Wallet, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/hooks/use-toast';
 
 interface PaymentMethod {
   id: string;
@@ -23,6 +24,7 @@ interface PaymentMethodSelectionProps {
   onBack: () => void;
   onCancel: () => void;
   onContinue: () => void;
+  isProcessing?: boolean;
 }
 
 export const EnhancedPaymentMethodSelection = ({ 
@@ -30,7 +32,8 @@ export const EnhancedPaymentMethodSelection = ({
   selectedMethod,
   onBack,
   onCancel,
-  onContinue
+  onContinue,
+  isProcessing = false
 }: PaymentMethodSelectionProps) => {
   const paymentMethods: PaymentMethod[] = [
     {
@@ -68,6 +71,7 @@ export const EnhancedPaymentMethodSelection = ({
   const [amount, setAmount] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Make sure a payment method is selected before allowing to continue
   const handleContinue = () => {
@@ -82,9 +86,21 @@ export const EnhancedPaymentMethodSelection = ({
 
   const handleSubmitPayment = () => {
     // Here we would validate inputs in a real system
-    if (selectedMethod && amount) {
-      onContinue();
-    }
+    setSubmitting(true);
+    
+    // Simulate payment processing
+    setTimeout(() => {
+      if (selectedMethod && amount) {
+        onContinue();
+      } else {
+        toast({
+          title: "Payment Information Required",
+          description: "Please enter all required payment details",
+          variant: "destructive"
+        });
+        setSubmitting(false);
+      }
+    }, 1000);
   };
 
   return (
@@ -192,6 +208,7 @@ export const EnhancedPaymentMethodSelection = ({
               type="button" 
               variant="outline" 
               onClick={onBack}
+              disabled={isProcessing}
             >
               Back
             </Button>
@@ -201,16 +218,24 @@ export const EnhancedPaymentMethodSelection = ({
                 variant="outline" 
                 onClick={onCancel}
                 className="mr-2"
+                disabled={isProcessing}
               >
                 Cancel
               </Button>
               <Button 
                 type="button" 
                 onClick={handleContinue}
-                disabled={!selectedMethod}
+                disabled={!selectedMethod || isProcessing}
                 className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
               >
-                Continue
+                {isProcessing ? (
+                  <div className="flex items-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  'Continue'
+                )}
               </Button>
             </div>
           </div>
@@ -266,6 +291,7 @@ export const EnhancedPaymentMethodSelection = ({
               type="button" 
               variant="outline" 
               onClick={() => setShowPaymentDetails(false)}
+              disabled={submitting}
             >
               Back
             </Button>
@@ -275,16 +301,24 @@ export const EnhancedPaymentMethodSelection = ({
                 variant="outline" 
                 onClick={onCancel}
                 className="mr-2"
+                disabled={submitting}
               >
                 Cancel
               </Button>
               <Button 
                 type="button"
                 onClick={handleSubmitPayment}
-                disabled={!amount || !referenceNumber}
+                disabled={!amount || !referenceNumber || submitting}
                 className="bg-kasadya-purple hover:bg-kasadya-deep-purple"
               >
-                Submit Payment
+                {submitting ? (
+                  <div className="flex items-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  'Submit Payment'
+                )}
               </Button>
             </div>
           </div>
