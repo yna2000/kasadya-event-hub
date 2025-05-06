@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calendar, Clock, CheckCircle2, XCircle, User, UserCheck, Users, Camera, FileCheck, Shield } from 'lucide-react';
+import { useBooking, Booking } from '@/contexts/BookingContext';
+import { Calendar, Clock, CheckCircle2, XCircle, User, UserCheck, Users, Camera, FileCheck, Shield, DollarSign, Check, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -16,10 +18,17 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user, getAllUsers, getPendingVerificationUsers, verifyUser } = useAuth();
+  const { bookings, updateBookingStatus, updatePaymentStatus, getBookingById } = useBooking();
+  
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [adminNotifications, setAdminNotifications] = useState<any[]>([]);
@@ -28,6 +37,15 @@ export default function AdminDashboard() {
   const [serviceDetailOpen, setServiceDetailOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [adminComment, setAdminComment] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPayment, setFilterPayment] = useState('all');
+  const [filterVendor, setFilterVendor] = useState('all');
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isMarkAsPaidOpen, setIsMarkAsPaidOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState<'gcash' | 'maya' | 'bank' | 'cash'>('cash');
 
   useEffect(() => {
     // Redirect if not admin
@@ -42,6 +60,10 @@ export default function AdminDashboard() {
     // Get all users
     const users = getAllUsers();
     setAllUsers(users);
+
+    // Get all vendors
+    const vendorList = users.filter(u => u.isVendor);
+    setVendors(vendorList);
 
     // Load admin notifications
     const storedNotifications = localStorage.getItem('adminNotifications') || '[]';
@@ -183,6 +205,108 @@ export default function AdminDashboard() {
       });
     }
   };
+  
+  const handleOpenBookingDetail = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setBookingDetailOpen(true);
+  };
+  
+  const handleStatusChange = (bookingId: string, newStatus: Booking['status']) => {
+    updateBookingStatus(bookingId, newStatus);
+    
+    // Update the selected booking if it's open
+    if (selectedBooking && selectedBooking.id === bookingId) {
+      setSelectedBooking({
+        ...selectedBooking,
+        status: newStatus
+      });
+    }
+    
+    toast({
+      title: "Booking Updated",
+      description: `Booking status has been updated to ${newStatus}.`,
+    });
+  };
+  
+  const handleMarkAsPaid = () => {
+    if (!selectedBooking) return;
+    
+    updatePaymentStatus(selectedBooking.id, 
+      paymentAmount >= selectedBooking.amount ? 'paid' : 'partial', 
+      paymentMethod
+    );
+    
+    // Update the selected booking
+    setSelectedBooking({
+      ...selectedBooking,
+      paymentStatus: paymentAmount >= selectedBooking.amount ? 'paid' : 'partial',
+      paymentMethod,
+      amountPaid: paymentAmount + (selectedBooking.amountPaid || 0)
+    });
+    
+    // Close the dialog
+    setIsMarkAsPaidOpen(false);
+    
+    toast({
+      title: "Payment Recorded",
+      description: `Payment of ₱${paymentAmount.toLocaleString()} has been recorded.`,
+    });
+  };
+  
+  // Get filtered bookings based on status, payment status, and vendor
+  const getFilteredBookings = () => {
+    let filtered = [...bookings];
+    
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(booking => booking.status === filterStatus);
+    }
+    
+    // Filter by payment status
+    if (filterPayment !== 'all') {
+      filtered = filtered.filter(booking => booking.paymentStatus === filterPayment);
+    }
+    
+    // Filter by vendor
+    if (filterVendor !== 'all') {
+      filtered = filtered.filter(booking => booking.vendorId === filterVendor);
+    }
+    
+    // Sort by date (newest first)
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    return filtered;
+  };
+  
+  const filteredBookings = getFilteredBookings();
+  
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <Badge className="bg-green-500">Confirmed</Badge>;
+      case 'pending':
+        return <Badge variant="outline" className="text-orange-600 border-orange-200">Pending</Badge>;
+      case 'cancelled':
+        return <Badge variant="destructive">Cancelled</Badge>;
+      case 'completed':
+        return <Badge className="bg-blue-500">Completed</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+  
+  const getPaymentStatusBadge = (paymentStatus: string) => {
+    switch (paymentStatus) {
+      case 'paid':
+        return <Badge className="bg-green-500">Paid</Badge>;
+      case 'partial':
+        return <Badge className="bg-yellow-500">Partial</Badge>;
+      case 'unpaid':
+        return <Badge variant="outline" className="text-red-600 border-red-200">Unpaid</Badge>;
+      default:
+        return <Badge variant="outline">{paymentStatus}</Badge>;
+    }
+  };
 
   // Count users by role
   const vendorCount = allUsers.filter(user => user.isVendor).length;
@@ -190,6 +314,16 @@ export default function AdminDashboard() {
   const pendingVerificationCount = pendingUsers.length;
   const unreadNotificationsCount = adminNotifications.filter(n => !n.read).length;
   const pendingServicesCount = pendingServices.length;
+  
+  // Count bookings by status
+  const pendingBookingsCount = bookings.filter(b => b.status === 'pending').length;
+  const confirmedBookingsCount = bookings.filter(b => b.status === 'confirmed').length;
+  const completedBookingsCount = bookings.filter(b => b.status === 'completed').length;
+  
+  // Count bookings by payment status
+  const unpaidBookingsCount = bookings.filter(b => b.paymentStatus === 'unpaid').length;
+  const partiallyPaidBookingsCount = bookings.filter(b => b.paymentStatus === 'partial').length;
+  const fullyPaidBookingsCount = bookings.filter(b => b.paymentStatus === 'paid').length;
 
   return (
     <div className="container mx-auto p-6">
@@ -221,7 +355,14 @@ export default function AdminDashboard() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="bookings">Bookings</TabsTrigger>
+          <TabsTrigger value="bookings" className="relative">
+            Bookings
+            {pendingBookingsCount > 0 && (
+              <Badge className="absolute -top-2 -right-2 bg-red-500 text-white">
+                {pendingBookingsCount}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="notifications" className="relative">
             Notifications
             {unreadNotificationsCount > 0 && (
@@ -233,7 +374,7 @@ export default function AdminDashboard() {
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -280,9 +421,61 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Booking Status
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{bookings.length}</div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  <Badge className="bg-yellow-500">{pendingBookingsCount} Pending</Badge>
+                  <Badge className="bg-green-500">{confirmedBookingsCount} Confirmed</Badge>
+                  <Badge className="bg-blue-500">{completedBookingsCount} Completed</Badge>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Payment Status
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{fullyPaidBookingsCount} Paid</div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  <Badge variant="outline" className="text-red-600 border-red-200">{unpaidBookingsCount} Unpaid</Badge>
+                  <Badge className="bg-yellow-500">{partiallyPaidBookingsCount} Partial</Badge>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Revenue Overview
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ₱{bookings.reduce((sum, booking) => sum + (booking.amountPaid || 0), 0).toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total revenue collected
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           {pendingVerificationCount > 0 && (
-            <Card className="mt-4">
+            <Card className="mt-4 mb-6">
               <CardHeader>
                 <CardTitle>Pending User Verifications</CardTitle>
                 <CardDescription>
@@ -662,19 +855,136 @@ export default function AdminDashboard() {
         <TabsContent value="bookings">
           <Card>
             <CardHeader>
-              <CardTitle>Booking Management</CardTitle>
-              <CardDescription>
-                Monitor and manage all bookings
-              </CardDescription>
+              <div className="flex flex-col sm:flex-row justify-between gap-4">
+                <div>
+                  <CardTitle>Booking Management</CardTitle>
+                  <CardDescription>
+                    Monitor and manage all bookings across vendors
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={filterPayment} onValueChange={setFilterPayment}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Payment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Payments</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="partial">Partial</SelectItem>
+                      <SelectItem value="unpaid">Unpaid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={filterVendor} onValueChange={setFilterVendor}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Vendors</SelectItem>
+                      {vendors.map(vendor => (
+                        <SelectItem key={vendor.id} value={vendor.id}>
+                          {vendor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                <h3 className="font-medium text-lg">Booking Calendar</h3>
-                <p className="text-muted-foreground">View the booking calendar for a detailed schedule</p>
-                <Button className="mt-4" onClick={() => navigate('/admin-booking-calendar')}>
-                  Open Booking Calendar
-                </Button>
+              {filteredBookings.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No bookings found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Try adjusting your filters to see more bookings
+                  </p>
+                  <Button variant="outline" onClick={() => {
+                    setFilterStatus('all');
+                    setFilterPayment('all');
+                    setFilterVendor('all');
+                  }}>
+                    Reset Filters
+                  </Button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Date/Time</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Payment</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredBookings.map((booking) => (
+                        <TableRow key={booking.id}>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{booking.name}</span>
+                              <span className="text-xs text-muted-foreground">{booking.email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{booking.vendorName}</TableCell>
+                          <TableCell className="max-w-[120px] truncate" title={booking.serviceName}>
+                            {booking.serviceName}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span>{booking.date}</span>
+                              <span className="text-xs text-muted-foreground">{booking.time}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(booking.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              {getPaymentStatusBadge(booking.paymentStatus)}
+                              <span className="text-xs text-muted-foreground">
+                                {booking.amountPaid 
+                                  ? `₱${booking.amountPaid.toLocaleString()} of ₱${booking.amount.toLocaleString()}` 
+                                  : `₱${booking.amount.toLocaleString()}`}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleOpenBookingDetail(booking)}
+                            >
+                              <Info className="h-4 w-4 mr-1" />
+                              Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              
+              <div className="mt-4 text-sm text-muted-foreground text-right">
+                Showing {filteredBookings.length} of {bookings.length} bookings
               </div>
             </CardContent>
           </Card>
@@ -729,6 +1039,7 @@ export default function AdminDashboard() {
         </TabsContent>
       </Tabs>
 
+      {/* Service Detail Dialog */}
       <Dialog open={serviceDetailOpen} onOpenChange={setServiceDetailOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -814,6 +1125,222 @@ export default function AdminDashboard() {
                 >
                   <CheckCircle2 className="h-4 w-4 mr-1" />
                   Approve Service
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Booking Detail Dialog */}
+      <Dialog open={bookingDetailOpen} onOpenChange={setBookingDetailOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+            <DialogDescription>
+              View and manage this booking
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedBooking && (
+            <>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h3 className="font-semibold text-sm">Client</h3>
+                  <p>{selectedBooking.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedBooking.email}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">Vendor</h3>
+                  <p>{selectedBooking.vendorName}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">Service</h3>
+                  <p>{selectedBooking.serviceName}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">Date & Time</h3>
+                  <p>{selectedBooking.date}</p>
+                  <p className="text-sm text-muted-foreground">{selectedBooking.time}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">Status</h3>
+                  <div className="mt-1">
+                    {getStatusBadge(selectedBooking.status)}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">Booked On</h3>
+                  <p>{new Date(selectedBooking.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div className="col-span-2">
+                  <h3 className="font-semibold text-sm mb-1">Payment Status</h3>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      {getPaymentStatusBadge(selectedBooking.paymentStatus)}
+                      <span className="ml-2 text-sm">
+                        {selectedBooking.amountPaid 
+                          ? `₱${selectedBooking.amountPaid.toLocaleString()} of ₱${selectedBooking.amount.toLocaleString()}` 
+                          : `₱${selectedBooking.amount.toLocaleString()} (Unpaid)`
+                        }
+                      </span>
+                      {selectedBooking.paymentMethod && (
+                        <Badge variant="outline" className="ml-2">
+                          via {selectedBooking.paymentMethod}
+                        </Badge>
+                      )}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setPaymentAmount(selectedBooking.amount - (selectedBooking.amountPaid || 0));
+                        setIsMarkAsPaidOpen(true);
+                      }}
+                      disabled={selectedBooking.paymentStatus === 'paid'}
+                    >
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      {selectedBooking.paymentStatus === 'unpaid' ? 'Record Payment' : 'Add Payment'}
+                    </Button>
+                  </div>
+                </div>
+                {selectedBooking.notes && (
+                  <div className="col-span-2">
+                    <h3 className="font-semibold text-sm">Notes</h3>
+                    <p className="text-sm">{selectedBooking.notes}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-2">Update Status</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {selectedBooking.status !== 'pending' && (
+                    <Button 
+                      variant="outline"
+                      onClick={() => handleStatusChange(selectedBooking.id, 'pending')}
+                      className="justify-start"
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Mark as Pending
+                    </Button>
+                  )}
+                  {selectedBooking.status !== 'confirmed' && (
+                    <Button 
+                      variant={selectedBooking.status === 'pending' ? 'default' : 'outline'}
+                      className={selectedBooking.status === 'pending' ? 'bg-green-600 hover:bg-green-700 justify-start' : 'justify-start'}
+                      onClick={() => handleStatusChange(selectedBooking.id, 'confirmed')}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Confirm Booking
+                    </Button>
+                  )}
+                  {selectedBooking.status !== 'cancelled' && (
+                    <Button 
+                      variant={selectedBooking.status === 'pending' ? 'destructive' : 'outline'} 
+                      className="justify-start"
+                      onClick={() => handleStatusChange(selectedBooking.id, 'cancelled')}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel Booking
+                    </Button>
+                  )}
+                  {selectedBooking.status !== 'completed' && selectedBooking.status !== 'cancelled' && (
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={() => handleStatusChange(selectedBooking.id, 'completed')}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Mark as Completed
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setBookingDetailOpen(false);
+                    setSelectedBooking(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Mark as Paid Dialog */}
+      <Dialog open={isMarkAsPaidOpen} onOpenChange={setIsMarkAsPaidOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>
+              Enter payment details for this booking
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedBooking && (
+            <>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="amount">Payment Amount (₱)</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Input 
+                      id="amount"
+                      type="number" 
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                      className="pl-9"
+                      min={0}
+                      max={selectedBooking.amount - (selectedBooking.amountPaid || 0)}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {selectedBooking.amountPaid 
+                      ? `Previously paid: ₱${selectedBooking.amountPaid.toLocaleString()} | Remaining: ₱${(selectedBooking.amount - selectedBooking.amountPaid).toLocaleString()}` 
+                      : `Total amount: ₱${selectedBooking.amount.toLocaleString()}`
+                    }
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Payment Method</Label>
+                  <RadioGroup value={paymentMethod} onValueChange={(value: 'gcash' | 'maya' | 'bank' | 'cash') => setPaymentMethod(value)}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="gcash" id="gcash" />
+                      <Label htmlFor="gcash">GCash</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="maya" id="maya" />
+                      <Label htmlFor="maya">Maya</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="bank" id="bank" />
+                      <Label htmlFor="bank">Bank Transfer</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="cash" id="cash" />
+                      <Label htmlFor="cash">Cash</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsMarkAsPaidOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleMarkAsPaid}
+                  disabled={paymentAmount <= 0}
+                >
+                  Record Payment
                 </Button>
               </DialogFooter>
             </>

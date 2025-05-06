@@ -173,12 +173,21 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
         )
       );
 
-      // Create notification about the payment
+      // Create notification for both user and vendor
       addNotification({
         userId: booking.userId,
         title: 'Payment Successful',
         message: `Your payment of ₱${amount.toLocaleString()} for ${booking.serviceName} with ${booking.vendorName} has been processed via ${paymentMethod}.`,
         type: 'payment'
+      });
+      
+      // Add notification for the vendor
+      addVendorNotification({
+        vendorId: booking.vendorId,
+        title: 'Payment Received',
+        message: `Payment of ₱${amount.toLocaleString()} received for booking ${booking.id.slice(0, 6)}... - ${booking.serviceName} via ${paymentMethod}.`,
+        type: 'payment',
+        bookingId: booking.id
       });
 
       toast({
@@ -195,6 +204,36 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
         variant: 'destructive',
       });
       return false;
+    }
+  };
+
+  const addVendorNotification = (notification: { 
+    vendorId: string; 
+    title: string; 
+    message: string; 
+    type: string;
+    bookingId?: string;
+  }) => {
+    try {
+      const storedNotifications = localStorage.getItem('vendorNotifications') || '[]';
+      const notifications = JSON.parse(storedNotifications);
+      
+      // Add the new notification
+      notifications.push({
+        id: `notification-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        vendorId: notification.vendorId,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        bookingId: notification.bookingId,
+        read: false,
+        createdAt: new Date().toISOString()
+      });
+      
+      // Store back to localStorage
+      localStorage.setItem('vendorNotifications', JSON.stringify(notifications));
+    } catch (error) {
+      console.error('Error adding vendor notification:', error);
     }
   };
 
@@ -229,6 +268,15 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       message: `Your booking with ${newBooking.vendorName} for ${newBooking.serviceName} has been received and is pending confirmation.`,
       type: 'booking'
     });
+    
+    // Create notification for the vendor
+    addVendorNotification({
+      vendorId: newBooking.vendorId,
+      title: 'New Booking Request',
+      message: `You have received a new booking request for ${newBooking.serviceName} on ${newBooking.date} at ${newBooking.time}.`,
+      type: 'booking',
+      bookingId: newBooking.id
+    });
 
     toast({
       title: 'Booking Created',
@@ -260,12 +308,21 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       )
     );
 
-    // Create notification about the status change
+    // Create notification about the status change for the user
     addNotification({
       userId: booking.userId,
       title: `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}`,
       message: `Your booking for ${booking.serviceName} with ${booking.vendorName} has been ${status}.`,
       type: 'booking'
+    });
+    
+    // Add notification for the vendor
+    addVendorNotification({
+      vendorId: booking.vendorId,
+      title: `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: `You have updated the booking status to ${status} for ${booking.serviceName} on ${booking.date}.`,
+      type: 'status',
+      bookingId: booking.id
     });
 
     toast({
@@ -302,12 +359,21 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       )
     );
 
-    // Create notification about the payment status
+    // Create notification about the payment status for the user
     addNotification({
       userId: booking.userId,
       title: 'Payment Status Updated',
       message: `Payment status for your booking with ${booking.vendorName} has been updated to ${paymentStatus}.`,
       type: 'payment'
+    });
+    
+    // Add notification for the vendor
+    addVendorNotification({
+      vendorId: booking.vendorId,
+      title: 'Payment Status Updated',
+      message: `Payment status has been updated to ${paymentStatus} for booking ${booking.id.slice(0, 6)}... - ${booking.serviceName}.`,
+      type: 'payment',
+      bookingId: booking.id
     });
 
     toast({
@@ -326,12 +392,21 @@ export const BookingProvider = ({ children }: { children: ReactNode }) => {
       )
     );
 
-    // Create notification about cancellation
+    // Create notification about cancellation for the user
     addNotification({
       userId: booking.userId,
       title: 'Booking Cancelled',
       message: `Your booking for ${booking.serviceName} with ${booking.vendorName} has been cancelled.`,
       type: 'booking'
+    });
+    
+    // Add notification for the vendor
+    addVendorNotification({
+      vendorId: booking.vendorId,
+      title: 'Booking Cancelled',
+      message: `A booking for ${booking.serviceName} on ${booking.date} has been cancelled.`,
+      type: 'booking',
+      bookingId: booking.id
     });
 
     toast({
