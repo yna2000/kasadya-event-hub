@@ -132,7 +132,7 @@ const Services = () => {
                   {service.description}
                 </p>
                 <Button asChild variant="outline" className="w-full border-kasadya-purple text-kasadya-purple hover:bg-kasadya-purple hover:text-white">
-                  <Link to={service.vendorId ? `/vendor-service/${service.id}` : "/vendors"}>
+                  <Link to={service.vendorId ? `/vendor/${service.vendorId}/service/${service.id}` : "/vendors"}>
                     {service.vendorId ? "View Service" : "Find Providers"}
                   </Link>
                 </Button>
@@ -197,7 +197,7 @@ const Services = () => {
                       )}
                     </div>
                     <Button asChild variant="outline" className="w-full border-kasadya-purple text-kasadya-purple hover:bg-kasadya-purple hover:text-white">
-                      <Link to={service.vendorId ? `/vendor-service/${service.id}` : "/vendors"}>
+                      <Link to={service.vendorId ? `/vendor/${service.vendorId}/service/${service.id}` : "/vendors"}>
                         {service.vendorId ? "View Service" : "Find Providers"}
                       </Link>
                     </Button>
