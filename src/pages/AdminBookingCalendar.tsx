@@ -246,7 +246,7 @@ const AdminBookingCalendar = () => {
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              className="border rounded-md"
+              className="border rounded-md pointer-events-auto"
               components={{
                 DayContent: ({ date }) => renderDay(date),
               }}
